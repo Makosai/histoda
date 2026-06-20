@@ -14,6 +14,8 @@ services:
       - ./data:/var/lib/clickhouse
     environment:
       - CLICKHOUSE_DB=default
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
       interval: 5s
@@ -30,8 +32,8 @@ services:
     environment:
       - CLICKHOUSE_HOST=clickhouse
       - CLICKHOUSE_PORT=8123
-      - CLICKHOUSE_USER=default
-      - CLICKHOUSE_PASSWORD=
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
     command: sh -c "npm install && npm run daemon"
     depends_on:
       clickhouse:

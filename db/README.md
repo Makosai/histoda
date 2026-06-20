@@ -37,11 +37,15 @@ db/
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on your machine.
 - Node.js (v20+) and npm (only if you want to run scripts locally on the host instead of inside Docker).
 
-### Step 1: Spin up the Services
-Run this command inside the `db/` folder:
-```bash
-docker compose up -d
-```
+### Step 1: Set up environment and spin up services
+1. Copy the environment template to `.env` and adjust credentials if desired:
+   ```bash
+   cp .env.example .env
+   ```
+2. Run this command inside the `db/` folder:
+   ```bash
+   docker compose up -d
+   ```
 This spins up two services:
 1. **`clickhouse`**: A ClickHouse server container running stable LTS release **26.3-alpine**, exposing port `8123` (HTTP) and `9000` (Native TCP). It automatically runs `init/schema.sql` on its initial boot to build the database tables.
 2. **`ingest-daemon`**: A Node background worker that installs dependencies, executes initial seed data queries, and runs a scheduler daemon that performs incremental updates in the background.

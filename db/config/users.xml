@@ -1,8 +1,8 @@
 <clickhouse>
     <users>
-        <!-- Configure default user with empty password and unrestricted network access -->
+        <!-- Configure default user with environment-configured password and unrestricted network access -->
         <default>
-            <password></password>
+            <password from_env="CLICKHOUSE_PASSWORD" />
             <networks>
                 <ip>::/0</ip>
             </networks>
