@@ -1,6 +1,10 @@
 import { createClient } from '@clickhouse/client-web';
 import { CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD } from '$env/static/private';
 
+import { env } from '$env/dynamic/private';
+
+const timeout = env.CLICKHOUSE_TIMEOUT ? parseInt(env.CLICKHOUSE_TIMEOUT, 10) : 3000;
+
 // Initialize the ClickHouse client.
 // Since we are running in SvelteKit (Cloudflare Workers/Pages environment),
 // we use the HTTP/HTTPS endpoint of the ClickHouse server.
@@ -8,7 +12,7 @@ export const clickhouse = createClient({
 	url: CLICKHOUSE_HOST || 'http://localhost:8123',
 	username: CLICKHOUSE_USER || 'default',
 	password: CLICKHOUSE_PASSWORD || '',
-	request_timeout: 1000 // 1 second timeout
+	request_timeout: timeout
 });
 
 /**
