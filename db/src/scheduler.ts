@@ -14,16 +14,20 @@ async function initializeDatabase() {
     const schemaPath = join(process.cwd(), 'init/schema.sql');
     const schemaSql = readFileSync(schemaPath, 'utf-8');
 
-    // Split queries by semicolon, cleaning up whitespace
+    // Split queries by semicolon, cleaning up comments and whitespace
     const queries = schemaSql
       .split(';')
-      .map(q => q.trim())
+      .map(q => {
+        // Strip line comments
+        return q
+          .split('\n')
+          .filter(line => !line.trim().startsWith('--'))
+          .join('\n')
+          .trim();
+      })
       .filter(q => q.length > 0);
 
     for (const query of queries) {
-      // Skip pure comment queries
-      if (query.startsWith('--')) continue;
-
       console.log(`[Scheduler] Checking/creating table schema...`);
       await client.exec({
         query: query,
