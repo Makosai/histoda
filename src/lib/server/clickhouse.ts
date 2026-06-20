@@ -5,9 +5,10 @@ import { CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD } from '$env/stat
 // Since we are running in SvelteKit (Cloudflare Workers/Pages environment),
 // we use the HTTP/HTTPS endpoint of the ClickHouse server.
 export const clickhouse = createClient({
-	url: CLICKHOUSE_HOST,
-	username: CLICKHOUSE_USER,
-	password: CLICKHOUSE_PASSWORD
+	url: CLICKHOUSE_HOST || 'http://localhost:8123',
+	username: CLICKHOUSE_USER || 'default',
+	password: CLICKHOUSE_PASSWORD || '',
+	request_timeout: 1000 // 1 second timeout
 });
 
 /**
