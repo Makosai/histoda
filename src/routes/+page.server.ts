@@ -44,7 +44,7 @@ export const load: PageServerLoad = async () => {
 						elevation,
 						concat(toString(first_year), ' - ', toString(last_year)) AS period
 					FROM weather_stations
-					LIMIT 10
+					LIMIT 100
 				`,
 				format: 'JSONEachRow'
 			});
