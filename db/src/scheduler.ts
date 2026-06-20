@@ -1,9 +1,43 @@
+import { client } from './client.js';
 import { ingestClimate } from './ingest-climate.js';
 import { ingestEarthquakes } from './ingest-earthquakes.js';
 import { ingestConflicts } from './ingest-conflicts.js';
 import { ingestManual } from './ingest-manual.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+async function initializeDatabase() {
+  console.log('[Scheduler] Ensuring database tables exist...');
+  try {
+    const schemaPath = join(process.cwd(), 'init/schema.sql');
+    const schemaSql = readFileSync(schemaPath, 'utf-8');
+
+    // Split queries by semicolon, cleaning up whitespace
+    const queries = schemaSql
+      .split(';')
+      .map(q => q.trim())
+      .filter(q => q.length > 0);
+
+    for (const query of queries) {
+      // Skip pure comment queries
+      if (query.startsWith('--')) continue;
+
+      console.log(`[Scheduler] Checking/creating table schema...`);
+      await client.exec({
+        query: query,
+        clickhouse_settings: {
+          wait_end_of_query: 1
+        }
+      });
+    }
+    console.log('[Scheduler] Database schema verification completed.');
+  } catch (error) {
+    console.error('[Scheduler] Database schema initialization failed:', error);
+    throw error;
+  }
+}
 
 async function triggerUpdates() {
   console.log('\n==================================================');
@@ -47,6 +81,9 @@ async function run() {
   console.log('==================================================');
   console.log('[Scheduler] HISTODA Database Daemon Starting...');
   console.log('==================================================');
+
+  // Make sure schemas exist first
+  await initializeDatabase();
 
   // Initial seed run on container startup
   await triggerUpdates();
