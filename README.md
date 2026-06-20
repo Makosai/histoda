@@ -128,3 +128,7 @@ Histoda's UI takes inspiration from platforms like Vercel and Linear.
 ### Spacing & Grid System
 - Grid gap defaults to a strict `1.5rem` (24px) for dashboard layouts, ensuring elements never feel crowded.
 - Outer container padding defaults to `2rem` (32px) to give components room to breathe.
+
+## SvelteKit
+
+Initialized with `npx sv create . --template minimal --types ts --no-add-ons --install npm --no-dir-check`.
