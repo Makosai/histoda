@@ -108,6 +108,10 @@ export const GET: RequestHandler = async ({ url }) => {
 					source: 'clickhouse',
 					stationId,
 					data: parsedRows
+				}, {
+					headers: {
+						'Cache-Control': 'public, max-age=3600, stale-while-revalidate=600'
+					}
 				});
 			}
 		} catch (error) {
@@ -121,5 +125,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		source: 'mock',
 		stationId,
 		data: mockData
+	}, {
+		headers: {
+			'Cache-Control': 'public, max-age=86400'
+		}
 	});
 };
