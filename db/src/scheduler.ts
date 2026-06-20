@@ -1,0 +1,63 @@
+import { ingestClimate } from './ingest-climate.js';
+import { ingestEarthquakes } from './ingest-earthquakes.js';
+import { ingestConflicts } from './ingest-conflicts.js';
+import { ingestManual } from './ingest-manual.js';
+
+const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+async function triggerUpdates() {
+  console.log('\n==================================================');
+  console.log(`[Scheduler] Triggering scheduled data collection cycle at: ${new Date().toISOString()}`);
+  console.log('==================================================\n');
+
+  try {
+    console.log('[Scheduler] Running Climate Scraper...');
+    await ingestClimate();
+  } catch (err) {
+    console.error('[Scheduler] Climate Scraper failed, continuing...', err);
+  }
+
+  try {
+    console.log('[Scheduler] Running Earthquakes Scraper...');
+    await ingestEarthquakes();
+  } catch (err) {
+    console.error('[Scheduler] Earthquakes Scraper failed, continuing...', err);
+  }
+
+  try {
+    console.log('[Scheduler] Running Conflicts Seed...');
+    await ingestConflicts();
+  } catch (err) {
+    console.error('[Scheduler] Conflicts Seed failed, continuing...', err);
+  }
+
+  try {
+    console.log('[Scheduler] Running Manual Uploads Scanner...');
+    await ingestManual();
+  } catch (err) {
+    console.error('[Scheduler] Manual Uploads Scanner failed, continuing...', err);
+  }
+
+  console.log('\n==================================================');
+  console.log(`[Scheduler] Ingestion cycle complete. Next update scheduled in 24 hours.`);
+  console.log('==================================================\n');
+}
+
+async function run() {
+  console.log('==================================================');
+  console.log('[Scheduler] HISTODA Database Daemon Starting...');
+  console.log('==================================================');
+
+  // Initial seed run on container startup
+  await triggerUpdates();
+
+  // Set interval to run incrementally every 24 hours
+  setInterval(async () => {
+    await triggerUpdates();
+  }, UPDATE_INTERVAL_MS);
+}
+
+run().catch((err) => {
+  console.error('[Scheduler] Fatal error in background daemon:', err);
+  process.exit(1);
+});

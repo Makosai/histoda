@@ -1,0 +1,4 @@
+station_id,date,temp_max,temp_min,temp_avg,precipitation
+london,2026-06-01,22.5,12.0,17.25,1.2
+tokyo,2026-06-01,25.0,18.5,21.8,0.0
+new_york,2026-06-01,28.0,16.5,22.25,5.4

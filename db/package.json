@@ -1,0 +1,25 @@
+{
+  "name": "histoda-db-ingest",
+  "version": "1.0.0",
+  "description": "Self-contained ingestion scripts and database daemon setup for Histoda",
+  "main": "src/scheduler.ts",
+  "type": "module",
+  "scripts": {
+    "ingest:climate": "tsx src/ingest-climate.ts",
+    "ingest:earthquakes": "tsx src/ingest-earthquakes.ts",
+    "ingest:conflicts": "tsx src/ingest-conflicts.ts",
+    "ingest:manual": "tsx src/ingest-manual.ts",
+    "ingest:all": "tsx -e \"import('./src/ingest-climate.js'); import('./src/ingest-earthquakes.js'); import('./src/ingest-conflicts.js')\" || tsx src/ingest-climate.ts && tsx src/ingest-earthquakes.ts && tsx src/ingest-conflicts.ts",
+    "daemon": "tsx src/scheduler.ts"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^1.21.0",
+    "csv-parse": "^7.0.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

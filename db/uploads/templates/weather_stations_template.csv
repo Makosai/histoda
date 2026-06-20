@@ -1,0 +1,4 @@
+station_id,name,country,latitude,longitude,elevation,first_year,last_year
+paris,Paris Orly Airport,France,48.7262,2.3652,89,1970,2026
+copenhagen,Copenhagen Airport,Denmark,55.618,12.656,5,1970,2026
+capetown,Cape Town International,South Africa,-33.9715,18.6021,46,1970,2026

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "ww2",
+    "name": "World War II",
+    "region": "Global",
+    "startYear": 1939,
+    "endYear": 1945,
+    "combatants": ["Allies", "Axis"],
+    "casualties": 75000000,
+    "duration": "6 years",
+    "description": "The deadliest conflict in human history, involving the vast majority of the world's countries."
+  },
+  {
+    "id": "ww1",
+    "name": "World War I",
+    "region": "Europe/Global",
+    "startYear": 1914,
+    "endYear": 1918,
+    "combatants": ["Entente", "Central Powers"],
+    "casualties": 20000000,
+    "duration": "4 years",
+    "description": "One of the deadliest conflicts in history, leading to major political changes and empires collapsing."
+  },
+  {
+    "id": "vietnam",
+    "name": "Vietnam War",
+    "region": "Southeast Asia",
+    "startYear": 1955,
+    "endYear": 1975,
+    "combatants": ["North Vietnam & Allies", "South Vietnam & United States Allies"],
+    "casualties": 3800000,
+    "duration": "19 years",
+    "description": "A major Cold War-era conflict fought in Vietnam, Laos, and Cambodia."
+  },
+  {
+    "id": "korean",
+    "name": "Korean War",
+    "region": "East Asia",
+    "startYear": 1950,
+    "endYear": 1953,
+    "combatants": ["North Korea & China & USSR", "South Korea & United Nations Allies"],
+    "casualties": 3000000,
+    "duration": "3 years",
+    "description": "Fought between North and South Korea, which quickly escalated to include international superpowers."
+  },
+  {
+    "id": "napoleon",
+    "name": "Napoleonic Wars",
+    "region": "Europe/Global",
+    "startYear": 1803,
+    "endYear": 1815,
+    "combatants": ["French Empire & Allies", "Coalitions (UK, Austria, Russia, Prussia)"],
+    "casualties": 3500000,
+    "duration": "12 years",
+    "description": "A series of major conflicts pitting the French Empire against opposing coalitions."
+  },
+  {
+    "id": "civil_war",
+    "name": "American Civil War",
+    "region": "United States",
+    "startYear": 1861,
+    "endYear": 1865,
+    "combatants": ["Union (United States)", "Confederacy (Confederate States)"],
+    "casualties": 620000,
+    "duration": "4 years",
+    "description": "Fought between the Northern states and Southern states over slavery and states' rights."
+  },
+  {
+    "id": "thirty_years",
+    "name": "Thirty Years' War",
+    "region": "Europe",
+    "startYear": 1618,
+    "endYear": 1648,
+    "combatants": ["Protestant States (Sweden, France)", "Habsburg Allies (Holy Roman Empire, Spain)"],
+    "casualties": 8000000,
+    "duration": "30 years",
+    "description": "One of the longest and most destructive conflicts in European history, starting as a religious war."
+  },
+  {
+    "id": "crusades",
+    "name": "The Crusades",
+    "region": "Middle East",
+    "startYear": 1095,
+    "endYear": 1291,
+    "combatants": ["Christian Crusaders", "Seljuk Empire & Ayyubid Dynasty"],
+    "casualties": 2000000,
+    "duration": "196 years",
+    "description": "A series of religious wars initiated, supported, and directed by the Latin Church in the medieval period."
+  }
+]
