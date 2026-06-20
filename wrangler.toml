@@ -1,0 +1,5 @@
+# Cloudflare Pages Configuration for Histoda
+
+name = "histoda"
+compatibility_date = "2026-06-20"
+compatibility_flags = [ "nodejs_compat" ]
