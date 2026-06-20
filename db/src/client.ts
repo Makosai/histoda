@@ -1,8 +1,13 @@
 import { createClient } from '@clickhouse/client';
 import dotenv from 'dotenv';
 
+import { join } from 'path';
+
 // Load local .env if present (useful when running scripts outside Docker)
-dotenv.config();
+dotenv.config(); // CWD
+// Also load parent .env if running from the db/ subdirectory
+dotenv.config({ path: join(process.cwd(), '../.env') });
+dotenv.config({ path: join(process.cwd(), 'db/.env') });
 
 const host = process.env.CLICKHOUSE_HOST || 'localhost';
 const port = process.env.CLICKHOUSE_PORT || '8123';

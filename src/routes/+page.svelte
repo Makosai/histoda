@@ -57,6 +57,14 @@
 
 	// Trigger reload whenever selections or query limits change
 	$effect(() => {
+		// Explicit dependencies to guarantee reactivity in Svelte 5 across async boundaries
+		const _domain = activeDomain;
+		const _stationId = selectedStation.id;
+		const _earthquakeId = selectedEarthquake.id;
+		const _conflictId = selectedConflict.id;
+		const _start = startYear;
+		const _end = endYear;
+
 		loadDataset();
 	});
 

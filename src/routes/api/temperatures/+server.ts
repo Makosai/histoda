@@ -113,18 +113,68 @@ export const GET: RequestHandler = async ({ url }) => {
 						'Cache-Control': 'public, max-age=3600, stale-while-revalidate=600'
 					}
 				});
+			} else {
+				// ClickHouse is connected, but query returned 0 rows. Let's run diagnostics.
+				const countResult = await clickhouse.query({
+					query: 'SELECT count() as cnt FROM weather_records',
+					format: 'JSONEachRow'
+				});
+				const countRows = await countResult.json() as any[];
+				const totalRecords = countRows[0]?.cnt ? Number(countRows[0].cnt) : 0;
+
+				const stationsResult = await clickhouse.query({
+					query: 'SELECT DISTINCT station_id FROM weather_records LIMIT 10',
+					format: 'JSONEachRow'
+				});
+				const dbStations = await stationsResult.json() as any[];
+				const activeStations = dbStations.map((s: any) => s.station_id);
+
+				const mockData = generateMockData(stationId, startYear, endYear);
+				return json({
+					source: 'mock',
+					stationId,
+					data: mockData,
+					diagnostics: {
+						clickhouseConnected: true,
+						totalRecordsInDb: totalRecords,
+						availableStationsInDb: activeStations,
+						searchedStationId: stationId,
+						searchedRange: `${startYear} - ${endYear}`
+					}
+				}, {
+					headers: {
+						'Cache-Control': 'no-store'
+					}
+				});
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error('[ClickHouse] Error querying records:', error);
+			const mockData = generateMockData(stationId, startYear, endYear);
+			return json({
+				source: 'mock',
+				stationId,
+				data: mockData,
+				diagnostics: {
+					clickhouseConnected: true,
+					error: error.message || String(error)
+				}
+			}, {
+				headers: {
+					'Cache-Control': 'no-store'
+				}
+			});
 		}
 	}
 
-	// Fallback mock dataset
+	// Fallback mock dataset (database completely unreachable)
 	const mockData = generateMockData(stationId, startYear, endYear);
 	return json({
 		source: 'mock',
 		stationId,
-		data: mockData
+		data: mockData,
+		diagnostics: {
+			clickhouseConnected: false
+		}
 	}, {
 		headers: {
 			'Cache-Control': 'public, max-age=86400'
