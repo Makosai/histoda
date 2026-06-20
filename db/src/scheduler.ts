@@ -11,6 +11,30 @@ const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 async function initializeDatabase() {
   console.log('[Scheduler] Ensuring database tables exist...');
   try {
+    // Check for monthly partitions on existing tables and drop them to migrate to yearly partitions
+    try {
+      const tablesToCheck = ['weather_records', 'earthquake_events'];
+      for (const table of tablesToCheck) {
+        const checkQuery = await client.query({
+          query: `SELECT partition_key FROM system.tables WHERE database = currentDatabase() AND name = '${table}'`,
+          format: 'JSONEachRow'
+        });
+        const rows = await checkQuery.json() as { partition_key: string }[];
+        if (rows.length > 0) {
+          const pKey = rows[0].partition_key;
+          if (pKey.includes('toYYYYMM')) {
+            console.log(`[Scheduler] Legacy partition key "${pKey}" detected for table "${table}". Dropping for schema update...`);
+            await client.exec({
+              query: `DROP TABLE IF EXISTS ${table}`,
+              clickhouse_settings: { wait_end_of_query: 1 }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Scheduler] Skipping legacy partition check:', err);
+    }
+
     const schemaPath = join(process.cwd(), 'init/schema.sql');
     const schemaSql = readFileSync(schemaPath, 'utf-8');
 

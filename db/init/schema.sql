@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS weather_records (
     temp_avg Nullable(Float32),
     precipitation Nullable(Float32)
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(date)
+PARTITION BY toYear(date)
 ORDER BY (station_id, date);
 
 -- Initialize schema for major earthquake events
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS earthquake_events (
     casualties UInt32,
     description String
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(timestamp)
+PARTITION BY toYear(timestamp)
 ORDER BY (magnitude, timestamp);
 
 -- Initialize schema for historical wars and conflicts
