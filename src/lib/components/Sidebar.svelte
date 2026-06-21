@@ -416,10 +416,12 @@
 		gap: 0.5rem;
 		max-height: 400px;
 		padding-right: 0.15rem;
+		scrollbar-width: thin;
+		scrollbar-color: var(--border-color) transparent;
 	}
 
 	.station-list::-webkit-scrollbar {
-		width: 4px;
+		width: 3px;
 	}
 
 	.station-list::-webkit-scrollbar-track {
