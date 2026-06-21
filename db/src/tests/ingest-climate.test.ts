@@ -76,7 +76,7 @@ test('Climate Ingest - Seeding and Incremental Loading', async (t) => {
   
   // 2. Verify we check for missing dates for each target station
   const dateChecks = queryLogs.filter(q => q.includes('LEFT ANTI JOIN'));
-  assert.strictEqual(dateChecks.length, 5, 'Should check missing dates for 5 target stations');
+  assert.strictEqual(dateChecks.length, 6, 'Should check missing dates for 6 target stations');
 
   // 3. Verify weather records were inserted
   const weatherInserts = insertLogs.filter(log => log.table === 'weather_records');
@@ -142,8 +142,8 @@ test('Climate Ingest - Chunking Large Date Ranges', async (t) => {
   // Chunk 1: 2015-01-02 to 2020-01-02
   // Chunk 2: 2020-01-03 to 2025-01-03
   // Chunk 3: 2025-01-04 to 2026-06-15
-  // Since there are 5 stations in total, we should see multiple chunk fetches per station.
-  assert.ok(fetchUrls.length > 5, 'Should make multiple chunked requests across stations');
+  // Since there are 6 stations in total, we should see multiple chunk fetches per station.
+  assert.ok(fetchUrls.length > 6, 'Should make multiple chunked requests across stations');
   
   // Verify date parameters in the first station's chunk URLs
   const firstUrlObj = new URL(fetchUrls[0]);

@@ -26,7 +26,8 @@ function generateMockData(
 		tokyo: { avg: 15.4, range: 15.0 },
 		new_york: { avg: 12.8, range: 18.0 },
 		cairo: { avg: 22.1, range: 10.0 },
-		sydney: { avg: 18.3, range: 8.0 }
+		sydney: { avg: 18.3, range: 8.0 },
+		tampa: { avg: 22.8, range: 12.0 }
 	};
 
 	const base = baseTemps[cityId] || { avg: 15.0, range: 10.0 };

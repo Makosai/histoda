@@ -19,7 +19,8 @@ const targetStations: ClimateStation[] = [
   { station_id: 'tokyo', name: 'Tokyo International', country: 'Japan', latitude: 35.5533, longitude: 139.7811, elevation: 6, first_year: 1970, last_year: 2026 },
   { station_id: 'new_york', name: 'New York Central Park', country: 'United States', latitude: 40.7829, longitude: -73.9654, elevation: 40, first_year: 1970, last_year: 2026 },
   { station_id: 'cairo', name: 'Cairo International', country: 'Egypt', latitude: 30.1219, longitude: 31.4056, elevation: 74, first_year: 1970, last_year: 2026 },
-  { station_id: 'sydney', name: 'Sydney Observatory Hill', country: 'Australia', latitude: -33.8598, longitude: 151.2052, elevation: 39, first_year: 1970, last_year: 2026 }
+  { station_id: 'sydney', name: 'Sydney Observatory Hill', country: 'Australia', latitude: -33.8598, longitude: 151.2052, elevation: 39, first_year: 1970, last_year: 2026 },
+  { station_id: 'tampa', name: 'Tampa International', country: 'United States', latitude: 27.9506, longitude: -82.4572, elevation: 8, first_year: 1970, last_year: 2026 }
 ];
 
 interface OpenMeteoResponse {
