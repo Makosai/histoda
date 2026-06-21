@@ -1,4 +1,4 @@
-import { client } from './client.js';
+import { client } from '../client.js';
 
 async function run() {
   console.log('[Test Query] Querying weather_stations...');
