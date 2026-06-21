@@ -54,6 +54,12 @@ export const load: PageServerLoad = async () => {
 			});
 			const dbStations = await stationResult.json() as any[];
 			if (dbStations.length > 0) {
+				const orderMap = new Map(defaultStations.map((s, index) => [s.id, index]));
+				dbStations.sort((a, b) => {
+					const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : Infinity;
+					const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : Infinity;
+					return indexA - indexB;
+				});
 				stations = dbStations;
 			}
 
