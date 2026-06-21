@@ -20,10 +20,13 @@ test('Climate Ingest - Seeding and Incremental Loading', async (t) => {
       };
     }
 
-    // Mock response for weather records max date check (simulate empty weather records)
-    if (query.includes('max(date)')) {
+    // Mock response for weather records gaps check (simulate missing dates)
+    if (query.includes('LEFT ANTI JOIN')) {
       return {
-        json: async () => [{ max_date: '0000-00-00' }]
+        json: async () => [
+          { missing_date: '1970-01-01' },
+          { missing_date: '1970-01-02' }
+        ]
       };
     }
 
@@ -71,9 +74,9 @@ test('Climate Ingest - Seeding and Incremental Loading', async (t) => {
   assert.ok(stationInsert, 'Should have inserted records into weather_stations');
   assert.strictEqual(stationInsert.values.length, 1, 'Should insert stations one by one');
   
-  // 2. Verify we check for max date for each target station
-  const dateChecks = queryLogs.filter(q => q.includes('max(date)'));
-  assert.strictEqual(dateChecks.length, 5, 'Should check max date for 5 target stations');
+  // 2. Verify we check for missing dates for each target station
+  const dateChecks = queryLogs.filter(q => q.includes('LEFT ANTI JOIN'));
+  assert.strictEqual(dateChecks.length, 5, 'Should check missing dates for 5 target stations');
 
   // 3. Verify weather records were inserted
   const weatherInserts = insertLogs.filter(log => log.table === 'weather_records');
@@ -98,10 +101,17 @@ test('Climate Ingest - Chunking Large Date Ranges', async (t) => {
       // Simulate stations exist so we skip seeding stations
       return { json: async () => [{ station_id: 'london' }] };
     }
-    if (query.includes('max(date)')) {
-      // Return 2015-01-01, meaning we need to fetch from 2015-01-02 up to today - 5 days (e.g. 2026-06-15)
-      // This is a span of ~11.5 years, which should be split into multiple 5-year chunks
-      return { json: async () => [{ max_date: '2015-01-01' }] };
+    if (query.includes('LEFT ANTI JOIN')) {
+      // Simulate missing dates between 2015-01-02 and 2026-06-15 (~11.5 years)
+      const dates: { missing_date: string }[] = [];
+      const start = new Date('2015-01-02T00:00:00Z');
+      const end = new Date('2026-06-15T00:00:00Z');
+      let curr = new Date(start);
+      while (curr <= end) {
+        dates.push({ missing_date: curr.toISOString().substring(0, 10) });
+        curr.setUTCDate(curr.getUTCDate() + 1);
+      }
+      return { json: async () => dates };
     }
     return { json: async () => [] };
   });
