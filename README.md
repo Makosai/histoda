@@ -1,5 +1,11 @@
 # Histoda
 
+<p align="center">
+  <a href="https://histoda.com">Website</a>
+  ·
+  <a href="https://quaintstudios.com">Quaint Studios</a>
+</p>
+
 Histoda is a versatile web application for exploring and visualizing complex historical datasets over multi-decade and multi-century timescales. Histoda allows researchers and enthusiasts to discover correlations between climate, natural events, and human history.
 
 ---
