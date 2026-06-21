@@ -77,39 +77,63 @@ async function run() {
 
       console.log(`[Ingest: Climate] Scraping daily weather for ${station.name} from ${startDateStr} to ${endDateStr}...`);
       
-      const openMeteoUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${station.latitude}&longitude=${station.longitude}&start_date=${startDateStr}&end_date=${endDateStr}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum&timezone=GMT`;
+      const start = new Date(startDateStr + 'T00:00:00Z');
+      const end = new Date(endDateStr + 'T00:00:00Z');
       
-      const res = await fetch(openMeteoUrl);
-      if (!res.ok) {
-        console.error(`[Ingest: Climate] Failed to fetch climate records for ${station.name}: status ${res.status}`);
-        continue;
-      }
-
-      const data = await res.json() as OpenMeteoResponse;
-      const daily = data.daily;
-      if (!daily || !daily.time || daily.time.length === 0) {
-        console.log(`[Ingest: Climate] No data returned for ${station.name}`);
-        continue;
-      }
-
-      const values = daily.time.map((time, idx) => {
-        return {
-          station_id: station.station_id,
-          date: time,
-          temp_max: daily.temperature_2m_max[idx],
-          temp_min: daily.temperature_2m_min[idx],
-          temp_avg: daily.temperature_2m_mean[idx],
-          precipitation: daily.precipitation_sum[idx]
-        };
-      });
-
-      console.log(`[Ingest: Climate] Ingesting ${values.length} records into weather_records for ${station.name}...`);
+      let currentStart = new Date(start);
       
-      await client.insert({
-        table: 'weather_records',
-        values: values,
-        format: 'JSONEachRow'
-      });
+      while (currentStart <= end) {
+        // Calculate end date for this chunk (max 5 years)
+        let currentEnd = new Date(currentStart);
+        currentEnd.setUTCFullYear(currentEnd.getUTCFullYear() + 5);
+        if (currentEnd > end) {
+          currentEnd = new Date(end);
+        }
+        
+        const chunkStartStr = currentStart.toISOString().substring(0, 10);
+        const chunkEndStr = currentEnd.toISOString().substring(0, 10);
+        
+        console.log(`  -> Fetching chunk: ${chunkStartStr} to ${chunkEndStr}...`);
+        
+        const openMeteoUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${station.latitude}&longitude=${station.longitude}&start_date=${chunkStartStr}&end_date=${chunkEndStr}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum&timezone=GMT`;
+        
+        const res = await fetch(openMeteoUrl);
+        if (!res.ok) {
+          console.error(`[Ingest: Climate] Failed to fetch climate records for ${station.name} (${chunkStartStr} to ${chunkEndStr}): status ${res.status}`);
+          // Move to next chunk to avoid infinite loop
+          currentStart = new Date(currentEnd);
+          currentStart.setUTCDate(currentStart.getUTCDate() + 1);
+          continue;
+        }
+        
+        const data = await res.json() as OpenMeteoResponse;
+        const daily = data.daily;
+        if (!daily || !daily.time || daily.time.length === 0) {
+          console.log(`  -> No data returned for this chunk.`);
+        } else {
+          const values = daily.time.map((time, idx) => {
+            return {
+              station_id: station.station_id,
+              date: time,
+              temp_max: daily.temperature_2m_max[idx],
+              temp_min: daily.temperature_2m_min[idx],
+              temp_avg: daily.temperature_2m_mean[idx],
+              precipitation: daily.precipitation_sum[idx]
+            };
+          });
+          
+          console.log(`  -> Ingesting ${values.length} records into weather_records...`);
+          await client.insert({
+            table: 'weather_records',
+            values: values,
+            format: 'JSONEachRow'
+          });
+        }
+        
+        // Advance to the next day after currentEnd
+        currentStart = new Date(currentEnd);
+        currentStart.setUTCDate(currentStart.getUTCDate() + 1);
+      }
     }
 
     console.log('[Ingest: Climate] Climate data ingestion completed successfully!');
