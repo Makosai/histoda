@@ -27,26 +27,36 @@
 	// Local state
 	let showImportExport = $state(false);
 	let importText = $state('');
+	let showBookmarksOnly = $state(false);
+
+	$effect(() => {
+		// Reset bookmarks filter when switching domain
+		const _domain = activeDomain;
+		showBookmarksOnly = false;
+	});
 
 	// Svelte 5 Derived Runes for lists
 	let filteredStations = $derived(
 		stations.filter((s) => 
-			s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-			s.country.toLowerCase().includes(searchQuery.toLowerCase())
+			(!showBookmarksOnly || bookmarks.includes(`climate:${s.id}`)) &&
+			(s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+			 s.country.toLowerCase().includes(searchQuery.toLowerCase()))
 		)
 	);
 
 	let filteredEarthquakes = $derived(
 		earthquakes.filter((e) => 
-			e.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-			e.country.toLowerCase().includes(searchQuery.toLowerCase())
+			(!showBookmarksOnly || bookmarks.includes(`earthquakes:${e.id}`)) &&
+			(e.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+			 e.country.toLowerCase().includes(searchQuery.toLowerCase()))
 		)
 	);
 
 	let filteredConflicts = $derived(
 		conflicts.filter((c) => 
-			c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-			c.region.toLowerCase().includes(searchQuery.toLowerCase())
+			(!showBookmarksOnly || bookmarks.includes(`conflicts:${c.id}`)) &&
+			(c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+			 c.region.toLowerCase().includes(searchQuery.toLowerCase()))
 		)
 	);
 
@@ -149,6 +159,24 @@
 		{/if}
 	</div>
 
+	<!-- Bookmarks filter pills -->
+	<div class="filters-bar">
+		<button 
+			class="filter-pill" 
+			class:active={!showBookmarksOnly} 
+			onclick={() => showBookmarksOnly = false}
+		>
+			All
+		</button>
+		<button 
+			class="filter-pill" 
+			class:active={showBookmarksOnly} 
+			onclick={() => showBookmarksOnly = true}
+		>
+			★ Bookmarked ({bookmarks.filter(b => b.startsWith(activeDomain === 'climate' ? 'climate:' : activeDomain === 'earthquakes' ? 'earthquakes:' : 'conflicts:')).length})
+		</button>
+	</div>
+
 	<!-- List View -->
 	<div class="list-header">
 		<h4>
@@ -188,6 +216,14 @@
 						</div>
 					</button>
 				{/each}
+				{#if filteredStations.length === 0}
+					<div class="empty-state">
+						<p>No weather stations found.</p>
+						{#if showBookmarksOnly}
+							<p class="empty-hint">Try bookmarking some stations first!</p>
+						{/if}
+					</div>
+				{/if}
 			{:else if activeDomain === 'earthquakes'}
 				{#each filteredEarthquakes as eq}
 					<button 
@@ -208,6 +244,14 @@
 						</div>
 					</button>
 				{/each}
+				{#if filteredEarthquakes.length === 0}
+					<div class="empty-state">
+						<p>No earthquakes found.</p>
+						{#if showBookmarksOnly}
+							<p class="empty-hint">Try bookmarking some earthquakes first!</p>
+						{/if}
+					</div>
+				{/if}
 			{:else if activeDomain === 'conflicts'}
 				{#each filteredConflicts as conflict}
 					<button 
@@ -228,6 +272,14 @@
 						</div>
 					</button>
 				{/each}
+				{#if filteredConflicts.length === 0}
+					<div class="empty-state">
+						<p>No conflicts found.</p>
+						{#if showBookmarksOnly}
+							<p class="empty-hint">Try bookmarking some conflicts first!</p>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 		</div>
 
@@ -387,6 +439,64 @@
 		align-items: center;
 		justify-content: center;
 		padding: 0 0.1rem;
+	}
+
+	/* Bookmarks Filter Pills */
+	.filters-bar {
+		display: flex;
+		gap: 0.35rem;
+		margin-top: 0.4rem;
+	}
+
+	.filter-pill {
+		background: transparent;
+		color: var(--text-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: 99px;
+		padding: 0.25rem 0.65rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.filter-pill:hover {
+		background: var(--bg-canvas);
+		border-color: var(--border-color-hover);
+		color: var(--text-primary);
+	}
+
+	.filter-pill.active {
+		background: var(--color-accent-soft);
+		color: var(--color-accent);
+		border-color: var(--color-accent-border);
+		font-weight: 600;
+	}
+
+	/* Empty State */
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem 1rem;
+		text-align: center;
+		color: var(--text-secondary);
+		background: var(--bg-card);
+		border: 1px dashed var(--border-color);
+		border-radius: var(--radius-md);
+		gap: 0.25rem;
+	}
+
+	.empty-state p {
+		font-size: 0.8rem;
+		font-weight: 500;
+		margin: 0;
+	}
+
+	.empty-hint {
+		font-size: 0.75rem !important;
+		color: var(--text-muted);
 	}
 
 	/* Selection list header */
