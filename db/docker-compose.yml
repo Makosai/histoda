@@ -30,7 +30,7 @@ services:
       - .:/app
     working_dir: /app
     environment:
-      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_HOST=127.0.0.1
       - CLICKHOUSE_PORT=8123
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
