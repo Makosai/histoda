@@ -102,7 +102,7 @@ async function run() {
               SELECT arrayJoin(
                   arrayMap(
                       x -> toDate(x),
-                      range(toDays(toDate({startDate: String})), toDays(toDate({endDate: String})) + 1)
+                      range(toInt32(toDate({startDate: String})), toInt32(toDate({endDate: String})) + 1)
                   )
               ) AS date
           ) AS expected
