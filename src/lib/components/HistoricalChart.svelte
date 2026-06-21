@@ -11,6 +11,9 @@
 		endYear: number;
 		selectedEarthquake: Earthquake;
 		selectedConflict: Conflict;
+		viewMode: 'annual' | 'seasonal' | 'monthly';
+		selectedSeason: string;
+		selectedMonth: number;
 	}
 
 	let {
@@ -21,18 +24,24 @@
 		startYear = $bindable(),
 		endYear = $bindable(),
 		selectedEarthquake,
-		selectedConflict
+		selectedConflict,
+		viewMode = $bindable('annual'),
+		selectedSeason = $bindable('all'),
+		selectedMonth = $bindable(0)
 	}: Props = $props();
 
 	let chartDom: HTMLElement | null = $state(null);
 	let chartInstance: any = null;
 
-	// Redraw chart when chartData, activeDomain, or isCelsius changes
+	// Redraw chart when chartData, activeDomain, isCelsius, viewMode, selectedSeason, or selectedMonth changes
 	$effect(() => {
 		// Explicit dependencies to track reactivity in Svelte 5
 		const _data = chartData;
 		const _domain = activeDomain;
 		const _unit = isCelsius;
+		const _mode = viewMode;
+		const _season = selectedSeason;
+		const _month = selectedMonth;
 
 		if (chartInstance) {
 			updateChart();
@@ -53,98 +62,289 @@
 		let option: any = {};
 
 		if (activeDomain === 'climate') {
-			const years = chartData.map((d) => d.year);
-			const avgTemps = chartData.map((d) => {
-				if (isCelsius) return d.tempAvg;
-				return parseFloat(((d.tempAvg * 1.8) + 32).toFixed(2));
-			});
-			const anomalies = chartData.map((d) => {
-				if (isCelsius) return d.globalAnomaly;
-				return parseFloat((d.globalAnomaly * 1.8).toFixed(3));
-			});
+			if (viewMode === 'seasonal' && selectedSeason === 'all') {
+				// 4-line seasonal chart
+				const yearsSet = new Set<number>();
+				const summerTempsMap = new Map<number, number>();
+				const winterTempsMap = new Map<number, number>();
+				const springTempsMap = new Map<number, number>();
+				const autumnTempsMap = new Map<number, number>();
 
-			option = {
-				tooltip: {
-					trigger: 'axis',
-					backgroundColor: '#ffffff',
-					borderColor: '#e4e4e7',
-					borderWidth: 1,
-					textStyle: { color: '#18181b', fontFamily: 'Outfit' },
-					formatter: function (params: any) {
-						let year = params[0].name;
-						let html = `<div style="padding: 4px 8px; font-family: Outfit;">
-							<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
-						params.forEach((param: any) => {
-							html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
-								<span style="color: #71717a;">${param.seriesName}</span>
-								<span style="font-weight: 500; color: ${param.color}">${param.value}°${isCelsius ? 'C' : 'F'}</span>
-							</div>`;
-						});
-						html += '</div>';
-						return html;
-					}
-				},
-				legend: {
-					data: ['Avg Temperature', 'Global Anomaly'],
-					textStyle: { fontFamily: 'Outfit', color: '#71717a' },
-					bottom: 0
-				},
-				grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
-				xAxis: {
-					type: 'category',
-					boundaryGap: false,
-					data: years,
-					axisLine: { lineStyle: { color: '#e4e4e7' } },
-					axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
-				},
-				yAxis: [
-					{
+				for (const row of chartData) {
+					yearsSet.add(row.year);
+					const temp = isCelsius ? row.tempAvg : parseFloat(((row.tempAvg * 1.8) + 32).toFixed(2));
+					if (row.season === 'Summer') summerTempsMap.set(row.year, temp);
+					else if (row.season === 'Winter') winterTempsMap.set(row.year, temp);
+					else if (row.season === 'Spring') springTempsMap.set(row.year, temp);
+					else if (row.season === 'Autumn') autumnTempsMap.set(row.year, temp);
+				}
+
+				const years = Array.from(yearsSet).sort((a, b) => a - b);
+				const summerTemps = years.map(y => summerTempsMap.get(y) ?? null);
+				const winterTemps = years.map(y => winterTempsMap.get(y) ?? null);
+				const springTemps = years.map(y => springTempsMap.get(y) ?? null);
+				const autumnTemps = years.map(y => autumnTempsMap.get(y) ?? null);
+
+				option = {
+					tooltip: {
+						trigger: 'axis',
+						backgroundColor: '#ffffff',
+						borderColor: '#e4e4e7',
+						borderWidth: 1,
+						textStyle: { color: '#18181b', fontFamily: 'Outfit' },
+						formatter: function (params: any) {
+							let year = params[0].name;
+							let html = `<div style="padding: 4px 8px; font-family: Outfit;">
+								<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year} (Seasonal Averages)</div>`;
+							params.forEach((param: any) => {
+								html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
+									<span style="color: #71717a;">${param.seriesName}</span>
+									<span style="font-weight: 600; color: ${param.color}">${param.value !== null ? param.value + `°${isCelsius ? 'C' : 'F'}` : 'N/A'}</span>
+								</div>`;
+							});
+							html += '</div>';
+							return html;
+						}
+					},
+					legend: {
+						data: ['Winter', 'Spring', 'Summer', 'Autumn'],
+						textStyle: { fontFamily: 'Outfit', color: '#71717a' },
+						bottom: 0
+					},
+					grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
+					xAxis: {
+						type: 'category',
+						boundaryGap: false,
+						data: years,
+						axisLine: { lineStyle: { color: '#e4e4e7' } },
+						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+					},
+					yAxis: {
 						type: 'value',
 						name: `Temp (°${isCelsius ? 'C' : 'F'})`,
 						nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
 						splitLine: { lineStyle: { color: '#f4f4f5', type: 'dashed' } },
 						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
 					},
-					{
-						type: 'value',
-						name: `Global Anomaly (°${isCelsius ? 'C' : 'F'})`,
-						nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
-						splitLine: { show: false },
-						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
-					}
-				],
-				series: [
-					{
-						name: 'Avg Temperature',
-						type: 'line',
-						data: avgTemps,
-						symbol: 'none',
-						smooth: true,
-						lineStyle: { width: 2.5, color: '#4f46e5' },
-						itemStyle: { color: '#4f46e5' }
-					},
-					{
-						name: 'Global Anomaly',
-						type: 'line',
-						yAxisIndex: 1,
-						data: anomalies,
-						symbol: 'none',
-						smooth: true,
-						lineStyle: { width: 2, color: '#f59e0b' },
-						areaStyle: {
-							color: {
-								type: 'linear',
-								x: 0, y: 0, x2: 0, y2: 1,
-								colorStops: [
-									{ offset: 0, color: 'rgba(245, 158, 11, 0.15)' },
-									{ offset: 1, color: 'rgba(245, 158, 11, 0)' }
-								]
-							}
+					series: [
+						{
+							name: 'Winter',
+							type: 'line',
+							data: winterTemps,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: '#06b6d4' },
+							itemStyle: { color: '#06b6d4' }
 						},
-						itemStyle: { color: '#f59e0b' }
-					}
-				]
-			};
+						{
+							name: 'Spring',
+							type: 'line',
+							data: springTemps,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: '#10b981' },
+							itemStyle: { color: '#10b981' }
+						},
+						{
+							name: 'Summer',
+							type: 'line',
+							data: summerTemps,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: '#f97316' },
+							itemStyle: { color: '#f97316' }
+						},
+						{
+							name: 'Autumn',
+							type: 'line',
+							data: autumnTemps,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: '#eab308' },
+							itemStyle: { color: '#eab308' }
+						}
+					]
+				};
+			} else if (viewMode === 'monthly' && selectedMonth === 0) {
+				// Continuous monthly timeline with dataZoom
+				const timelineLabels = chartData.map(d => `${d.year}-${String(d.month).padStart(2, '0')}`);
+				const temps = chartData.map(d => {
+					if (isCelsius) return d.tempAvg;
+					return parseFloat(((d.tempAvg * 1.8) + 32).toFixed(2));
+				});
+
+				option = {
+					tooltip: {
+						trigger: 'axis',
+						backgroundColor: '#ffffff',
+						borderColor: '#e4e4e7',
+						borderWidth: 1,
+						textStyle: { color: '#18181b', fontFamily: 'Outfit' },
+						formatter: function (params: any) {
+							let dateStr = params[0].name;
+							let tempVal = params[0].value;
+							return `<div style="padding: 4px 8px; font-family: Outfit;">
+								<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">${dateStr}</div>
+								<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
+									<span style="color: #71717a;">Avg Temperature</span>
+									<span style="font-weight: 600; color: #4f46e5;">${tempVal}°${isCelsius ? 'C' : 'F'}</span>
+								</div>
+							</div>`;
+						}
+					},
+					legend: {
+						data: ['Avg Temperature'],
+						textStyle: { fontFamily: 'Outfit', color: '#71717a' },
+						bottom: 0
+					},
+					grid: { left: '4%', right: '4%', top: '8%', bottom: '22%', containLabel: true },
+					xAxis: {
+						type: 'category',
+						boundaryGap: false,
+						data: timelineLabels,
+						axisLine: { lineStyle: { color: '#e4e4e7' } },
+						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+					},
+					yAxis: {
+						type: 'value',
+						name: `Temp (°${isCelsius ? 'C' : 'F'})`,
+						nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+						splitLine: { lineStyle: { color: '#f4f4f5', type: 'dashed' } },
+						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+					},
+					dataZoom: [
+						{
+							type: 'slider',
+							show: true,
+							start: 90, // default zoom to last 10%
+							end: 100,
+							textStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							borderColor: '#e4e4e7',
+							bottom: '4%'
+						}
+					],
+					series: [
+						{
+							name: 'Avg Temperature',
+							type: 'line',
+							data: temps,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.2, color: '#4f46e5' },
+							itemStyle: { color: '#4f46e5' }
+						}
+					]
+				};
+			} else {
+				// Single line trend (Annual, single season, or single month) over years
+				const years = chartData.map((d) => d.year);
+				const avgTemps = chartData.map((d) => {
+					if (isCelsius) return d.tempAvg;
+					return parseFloat(((d.tempAvg * 1.8) + 32).toFixed(2));
+				});
+				const anomalies = chartData.map((d) => {
+					if (isCelsius) return d.globalAnomaly;
+					return parseFloat((d.globalAnomaly * 1.8).toFixed(3));
+				});
+
+				let seriesName = 'Avg Temperature';
+				let lineColor = '#4f46e5';
+				
+				if (viewMode === 'seasonal') {
+					seriesName = `${selectedSeason} Avg Temp`;
+					if (selectedSeason === 'Summer') lineColor = '#f97316';
+					else if (selectedSeason === 'Winter') lineColor = '#06b6d4';
+					else if (selectedSeason === 'Spring') lineColor = '#10b981';
+					else if (selectedSeason === 'Autumn') lineColor = '#eab308';
+				} else if (viewMode === 'monthly') {
+					const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+					seriesName = `${monthNames[selectedMonth]} Avg Temp`;
+					lineColor = '#8b5cf6'; // Violet for single month
+				}
+
+				option = {
+					tooltip: {
+						trigger: 'axis',
+						backgroundColor: '#ffffff',
+						borderColor: '#e4e4e7',
+						borderWidth: 1,
+						textStyle: { color: '#18181b', fontFamily: 'Outfit' },
+						formatter: function (params: any) {
+							let year = params[0].name;
+							let html = `<div style="padding: 4px 8px; font-family: Outfit;">
+								<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
+							params.forEach((param: any) => {
+								html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
+									<span style="color: #71717a;">${param.seriesName}</span>
+									<span style="font-weight: 500; color: ${param.color}">${param.value}°${isCelsius ? 'C' : 'F'}</span>
+								</div>`;
+							});
+							html += '</div>';
+							return html;
+						}
+					},
+					legend: {
+						data: [seriesName, 'Global Anomaly'],
+						textStyle: { fontFamily: 'Outfit', color: '#71717a' },
+						bottom: 0
+					},
+					grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
+					xAxis: {
+						type: 'category',
+						boundaryGap: false,
+						data: years,
+						axisLine: { lineStyle: { color: '#e4e4e7' } },
+						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+					},
+					yAxis: [
+						{
+							type: 'value',
+							name: `Temp (°${isCelsius ? 'C' : 'F'})`,
+							nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							splitLine: { lineStyle: { color: '#f4f4f5', type: 'dashed' } },
+							axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+						},
+						{
+							type: 'value',
+							name: `Global Anomaly (°${isCelsius ? 'C' : 'F'})`,
+							nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							splitLine: { show: false },
+							axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+						}
+					],
+					series: [
+						{
+							name: seriesName,
+							type: 'line',
+							data: avgTemps,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: lineColor },
+							itemStyle: { color: lineColor }
+						},
+						{
+							name: 'Global Anomaly',
+							type: 'line',
+							yAxisIndex: 1,
+							data: anomalies,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2, color: '#f59e0b' },
+							areaStyle: {
+								color: {
+									type: 'linear',
+									x: 0, y: 0, x2: 0, y2: 1,
+									colorStops: [
+										{ offset: 0, color: 'rgba(245, 158, 11, 0.15)' },
+										{ offset: 1, color: 'rgba(245, 158, 11, 0)' }
+									]
+								}
+							},
+							itemStyle: { color: '#f59e0b' }
+						}
+					]
+				};
+			}
 		} else if (activeDomain === 'earthquakes') {
 			const years = chartData.map((d) => d.year);
 			const magnitudes = chartData.map((d) => d.mag);
@@ -356,26 +556,87 @@
 		</h3>
 		
 		{#if activeDomain === 'climate'}
-			<div class="range-selectors">
-				<div class="selector-group">
-					<label for="start-year">From</label>
-					<select id="start-year" bind:value={startYear}>
-						{#each Array.from({ length: 147 }, (_, i) => 1880 + i) as year}
-							{#if year < endYear}
-								<option value={year}>{year}</option>
-							{/if}
-						{/each}
-					</select>
+			<div class="climate-controls">
+				<!-- View Mode Toggle Button Group -->
+				<div class="view-toggle">
+					<button 
+						class="toggle-btn" 
+						class:active={viewMode === 'annual'} 
+						onclick={() => { viewMode = 'annual'; }}
+					>
+						Annual
+					</button>
+					<button 
+						class="toggle-btn" 
+						class:active={viewMode === 'seasonal'} 
+						onclick={() => { viewMode = 'seasonal'; }}
+					>
+						Seasonal
+					</button>
+					<button 
+						class="toggle-btn" 
+						class:active={viewMode === 'monthly'} 
+						onclick={() => { viewMode = 'monthly'; }}
+					>
+						Monthly
+					</button>
 				</div>
-				<div class="selector-group">
-					<label for="end-year">To</label>
-					<select id="end-year" bind:value={endYear}>
-						{#each Array.from({ length: 147 }, (_, i) => 1880 + i) as year}
-							{#if year > startYear}
-								<option value={year}>{year}</option>
-							{/if}
-						{/each}
-					</select>
+
+				<!-- Sub-filters based on viewMode -->
+				{#if viewMode === 'seasonal'}
+					<div class="selector-group">
+						<label for="season-select">Season</label>
+						<select id="season-select" bind:value={selectedSeason}>
+							<option value="all">All Seasons</option>
+							<option value="Summer">Summer</option>
+							<option value="Winter">Winter</option>
+							<option value="Spring">Spring</option>
+							<option value="Autumn">Autumn</option>
+						</select>
+					</div>
+				{:else if viewMode === 'monthly'}
+					<div class="selector-group">
+						<label for="month-select">Month</label>
+						<select id="month-select" bind:value={selectedMonth}>
+							<option value={0}>All Months</option>
+							<option value={1}>January</option>
+							<option value={2}>February</option>
+							<option value={3}>March</option>
+							<option value={4}>April</option>
+							<option value={5}>May</option>
+							<option value={6}>June</option>
+							<option value={7}>July</option>
+							<option value={8}>August</option>
+							<option value={9}>September</option>
+							<option value={10}>October</option>
+							<option value={11}>November</option>
+							<option value={12}>December</option>
+						</select>
+					</div>
+				{/if}
+
+				<!-- Year Range selectors -->
+				<div class="range-selectors">
+					<div class="selector-group">
+						<label for="start-year">From</label>
+						<select id="start-year" bind:value={startYear}>
+							{#each Array.from({ length: 147 }, (_, i) => 1880 + i) as year}
+								{#if year < endYear}
+									<option value={year}>{year}</option>
+								{/if}
+							{/each}
+						</select>
+					</div>
+					<div class="selector-group">
+						<label for="end-year">To</label>
+						<select id="end-year" bind:value={endYear}>
+							{#each Array.from({ length: 147 }, (_, i) => 1880 + i) as year}
+								{#if year > startYear}
+									<option value={year}>{year}</option>
+								{/if}
+							{/each}
+						</select>
+					</div>
 				</div>
 			</div>
 		{/if}
@@ -390,8 +651,6 @@
 		{/if}
 		<div bind:this={chartDom} class="echarts-container"></div>
 	</div>
-
-
 </div>
 
 <style>
@@ -413,12 +672,50 @@
 		gap: 1rem;
 		border-bottom: 1px solid #f4f4f5;
 		padding-bottom: 0.75rem;
+		flex-wrap: wrap;
 	}
 
 	.chart-header h3 {
 		font-size: 0.90rem;
 		font-weight: 600;
 		color: var(--text-primary);
+	}
+
+	.climate-controls {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.view-toggle {
+		display: flex;
+		background: var(--bg-canvas);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius-md);
+		padding: 2px;
+	}
+
+	.toggle-btn {
+		background: transparent;
+		color: var(--text-secondary);
+		border: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		padding: 0.25rem 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.toggle-btn:hover {
+		color: var(--text-primary);
+	}
+
+	.toggle-btn.active {
+		background: var(--bg-card);
+		color: var(--text-primary);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.range-selectors {
@@ -498,6 +795,4 @@
 		font-weight: 500;
 		color: var(--text-secondary);
 	}
-
-
 </style>

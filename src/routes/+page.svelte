@@ -28,6 +28,11 @@
 	// Year range filter controls
 	let startYear = $state(1880);
 	let endYear = $state(2026);
+
+	// Climate view controls
+	let viewMode = $state<'annual' | 'seasonal' | 'monthly'>('annual');
+	let selectedSeason = $state<string>('all');
+	let selectedMonth = $state<number>(0);
 	
 	// Chart state and local caching
 	let rawWeatherData = $state<any[]>([]);
@@ -38,7 +43,13 @@
 	// Derived chartData updates reactively in the browser (user CPU)
 	let chartData = $derived.by(() => {
 		if (activeDomain === 'climate') {
-			return rawWeatherData.filter((d) => d.year >= startYear && d.year <= endYear);
+			let filtered = rawWeatherData.filter((d) => d.year >= startYear && d.year <= endYear);
+			if (viewMode === 'seasonal' && selectedSeason !== 'all') {
+				filtered = filtered.filter((d) => d.season === selectedSeason);
+			} else if (viewMode === 'monthly' && selectedMonth !== 0) {
+				filtered = filtered.filter((d) => d.month === selectedMonth);
+			}
+			return filtered;
 		} else if (activeDomain === 'earthquakes') {
 			return generateMockSeismic(selectedEarthquake);
 		} else if (activeDomain === 'conflicts') {
@@ -47,11 +58,11 @@
 		return [];
 	});
 
-	// Fetch weather dataset only when the selected station or active domain changes
+	// Fetch weather dataset only when the selected station, active domain, or view changes
 	async function loadClimateData() {
 		isLoading = true;
 		try {
-			const res = await fetch(`/api/temperatures?station_id=${selectedStation.id}`);
+			const res = await fetch(`/api/temperatures?station_id=${selectedStation.id}&view=${viewMode}`);
 			const json = await res.json();
 			rawWeatherData = json.data || [];
 		} catch (e) {
@@ -61,10 +72,11 @@
 		}
 	}
 
-	// Trigger load only when domain or station changes
+	// Trigger load only when domain, station, or view changes
 	$effect(() => {
 		const _domain = activeDomain;
 		const _stationId = selectedStation.id;
+		const _viewMode = viewMode;
 
 		if (activeDomain === 'climate') {
 			loadClimateData();
@@ -209,6 +221,9 @@
 				{isCelsius}
 				bind:startYear
 				bind:endYear
+				bind:viewMode
+				bind:selectedSeason
+				bind:selectedMonth
 				{selectedEarthquake}
 				{selectedConflict}
 			/>
