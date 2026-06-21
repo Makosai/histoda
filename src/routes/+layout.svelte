@@ -32,6 +32,13 @@
 
 	<!-- Main Page Content -->
 	{@render children()}
+
+	<!-- Footer -->
+	<footer class="footer">
+		<p class="footer-text">
+			© 2024–{new Date().getFullYear()} <a href="https://quaintstudios.com" target="_blank" rel="noopener" class="footer-link">Quaint Studios LLC</a>
+		</p>
+	</footer>
 </div>
 
 <style>
@@ -42,5 +49,27 @@
 		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.footer {
+		margin-top: auto;
+		padding: 2.5rem 0 1rem 0;
+		text-align: center;
+		border-top: 1px solid var(--border-color);
+	}
+
+	.footer-text {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+
+	.footer-link {
+		color: var(--text-secondary);
+		font-weight: 500;
+		transition: color 0.15s ease;
+	}
+
+	.footer-link:hover {
+		color: var(--color-accent);
 	}
 </style>
