@@ -1,7 +1,5 @@
 <clickhouse>
-    <!-- Listen on all IPv6 interfaces to allow container network access -->
-    <!-- You can enable this if you need IPv6 -->
-    <!-- <listen_host>::</listen_host> -->
-    <!-- Listen on all IPv4 interfaces to allow container network access -->
+    <!-- Listen on all IPv6 and IPv4 interfaces to allow container network access -->
+    <listen_host>::</listen_host>
     <listen_host>0.0.0.0</listen_host>
 </clickhouse>

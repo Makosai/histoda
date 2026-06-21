@@ -34,6 +34,7 @@ services:
       - CLICKHOUSE_PORT=8123
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
+      - DNS_RESOLUTION_ORDER=${DNS_RESOLUTION_ORDER:-ipv4first}
     command: sh -c "npm install && npm run daemon"
     depends_on:
       clickhouse:

@@ -1,6 +1,6 @@
 import { createClient } from '@clickhouse/client';
 import dotenv from 'dotenv';
-
+import dns from 'node:dns';
 import { join } from 'path';
 
 // Load local .env if present (useful when running scripts outside Docker)
@@ -8,6 +8,14 @@ dotenv.config(); // CWD
 // Also load parent .env if running from the db/ subdirectory
 dotenv.config({ path: join(process.cwd(), '../.env') });
 dotenv.config({ path: join(process.cwd(), 'db/.env') });
+
+// Configure DNS resolution order based on env variables (defaults to ipv4first to avoid Docker IPv6 network timeouts)
+const dnsOrder = (process.env.DNS_RESOLUTION_ORDER || process.env.DNS_ORDER || 'ipv4first').toLowerCase();
+if (dnsOrder === 'ipv4first' || dnsOrder === 'ipv4') {
+  dns.setDefaultResultOrder('ipv4first');
+} else if (dnsOrder === 'verbatim' || dnsOrder === 'ipv6') {
+  dns.setDefaultResultOrder('verbatim');
+}
 
 const host = process.env.CLICKHOUSE_HOST || 'localhost';
 const port = process.env.CLICKHOUSE_PORT || '8123';
