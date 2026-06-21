@@ -26,6 +26,7 @@ services:
     image: node:20-alpine
     container_name: histoda-ingest-daemon
     restart: always
+    network_mode: host
     volumes:
       - .:/app
     working_dir: /app
