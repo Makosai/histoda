@@ -29,7 +29,8 @@ function generateMockData(
 		sydney: { avg: 18.3, range: 8.0 },
 		tampa: { avg: 22.8, range: 12.0 },
 		toronto: { avg: 9.7, range: 27.5 },
-		lagos: { avg: 27.0, range: 6.0 }
+		lagos: { avg: 27.0, range: 6.0 },
+		paris: { avg: 12.1, range: 12.0 }
 	};
 
 	const base = baseTemps[cityId] || { avg: 15.0, range: 10.0 };
@@ -107,7 +108,7 @@ function generateMockData(
 }
 
 export const GET: RequestHandler = async ({ url }) => {
-	const stationId = url.searchParams.get('station_id') || 'tampa';
+	const stationId = url.searchParams.get('station_id') || 'paris';
 	let startYear = parseInt(url.searchParams.get('start_year') || '1880', 10);
 	let endYear = parseInt(url.searchParams.get('end_year') || '2026', 10);
 	const view = url.searchParams.get('view') || 'annual';

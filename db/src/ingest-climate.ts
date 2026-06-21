@@ -15,6 +15,7 @@ interface ClimateStation {
 }
 
 const targetStations: ClimateStation[] = [
+  { station_id: 'paris', name: 'Paris Charles de Gaulle', country: 'France', latitude: 49.0097, longitude: 2.5479, elevation: 119, first_year: 1970, last_year: 2026 },
   { station_id: 'tampa', name: 'Tampa International', country: 'United States', latitude: 27.9506, longitude: -82.4572, elevation: 8, first_year: 1970, last_year: 2026 },
   { station_id: 'new_york', name: 'New York Central Park', country: 'United States', latitude: 40.7829, longitude: -73.9654, elevation: 40, first_year: 1970, last_year: 2026 },
   { station_id: 'toronto', name: 'Toronto Pearson International', country: 'Canada', latitude: 43.6777, longitude: -79.6248, elevation: 173, first_year: 1970, last_year: 2026 },
