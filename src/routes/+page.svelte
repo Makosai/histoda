@@ -29,43 +29,46 @@
 	let startYear = $state(1880);
 	let endYear = $state(2026);
 	
-	// Chart state
-	let chartData = $state<any[]>([]);
+	// Chart state and local caching
+	let rawWeatherData = $state<any[]>([]);
 	let isLoading = $state(false);
 	let bookmarks = $state<string[]>([]);
 	let hasMounted = $state(false);
 
-	// Fetch or generate data series reactively
-	async function loadDataset() {
+	// Derived chartData updates reactively in the browser (user CPU)
+	let chartData = $derived.by(() => {
+		if (activeDomain === 'climate') {
+			return rawWeatherData.filter((d) => d.year >= startYear && d.year <= endYear);
+		} else if (activeDomain === 'earthquakes') {
+			return generateMockSeismic(selectedEarthquake);
+		} else if (activeDomain === 'conflicts') {
+			return generateMockConflict(selectedConflict);
+		}
+		return [];
+	});
+
+	// Fetch weather dataset only when the selected station or active domain changes
+	async function loadClimateData() {
 		isLoading = true;
 		try {
-			if (activeDomain === 'climate') {
-				const res = await fetch(`/api/temperatures?station_id=${selectedStation.id}&start_year=${startYear}&end_year=${endYear}`);
-				const json = await res.json();
-				chartData = json.data || [];
-			} else if (activeDomain === 'earthquakes') {
-				chartData = generateMockSeismic(selectedEarthquake);
-			} else if (activeDomain === 'conflicts') {
-				chartData = generateMockConflict(selectedConflict);
-			}
+			const res = await fetch(`/api/temperatures?station_id=${selectedStation.id}`);
+			const json = await res.json();
+			rawWeatherData = json.data || [];
 		} catch (e) {
-			console.error('Failed to load dataset timeline', e);
+			console.error('Failed to load climate dataset timeline', e);
 		} finally {
 			isLoading = false;
 		}
 	}
 
-	// Trigger reload whenever selections or query limits change
+	// Trigger load only when domain or station changes
 	$effect(() => {
-		// Explicit dependencies to guarantee reactivity in Svelte 5 across async boundaries
 		const _domain = activeDomain;
 		const _stationId = selectedStation.id;
-		const _earthquakeId = selectedEarthquake.id;
-		const _conflictId = selectedConflict.id;
-		const _start = startYear;
-		const _end = endYear;
 
-		loadDataset();
+		if (activeDomain === 'climate') {
+			loadClimateData();
+		}
 	});
 
 	// Save temperature unit preference reactively after mount

@@ -29,13 +29,26 @@
 
 	// Redraw chart when chartData, activeDomain, or isCelsius changes
 	$effect(() => {
-		if (chartInstance && chartData.length > 0) {
+		// Explicit dependencies to track reactivity in Svelte 5
+		const _data = chartData;
+		const _domain = activeDomain;
+		const _unit = isCelsius;
+
+		if (chartInstance) {
 			updateChart();
 		}
 	});
 
 	function updateChart() {
-		if (!chartInstance || chartData.length === 0) return;
+		if (!chartInstance) return;
+
+		if (!chartData || chartData.length === 0) {
+			chartInstance.clear();
+			return;
+		}
+
+		// Ensure container size is updated before drawing
+		chartInstance.resize();
 
 		let option: any = {};
 

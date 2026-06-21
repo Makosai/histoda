@@ -58,8 +58,11 @@ function generateMockData(cityId: string, startYear = 1880, endYear = 2026): Tem
 
 export const GET: RequestHandler = async ({ url }) => {
 	const stationId = url.searchParams.get('station_id') || 'london';
-	const startYear = parseInt(url.searchParams.get('start_year') || '1880', 10);
-	const endYear = parseInt(url.searchParams.get('end_year') || '2026', 10);
+	let startYear = parseInt(url.searchParams.get('start_year') || '1880', 10);
+	let endYear = parseInt(url.searchParams.get('end_year') || '2026', 10);
+
+	if (isNaN(startYear)) startYear = 1880;
+	if (isNaN(endYear)) endYear = 2026;
 
 	const isDbAvailable = await testConnection();
 
