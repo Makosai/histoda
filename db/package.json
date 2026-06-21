@@ -11,7 +11,7 @@
     "ingest:manual": "tsx src/ingest-manual.ts",
     "ingest:all": "tsx -e \"import('./src/ingest-climate.js'); import('./src/ingest-earthquakes.js'); import('./src/ingest-conflicts.js')\" || tsx src/ingest-climate.ts && tsx src/ingest-earthquakes.ts && tsx src/ingest-conflicts.ts",
     "daemon": "tsx src/scheduler.ts",
-    "test": "tsx src/test-ingest.ts"
+    "test": "tsx --test src/tests/ingest-climate.test.ts src/tests/ingest-earthquakes.test.ts src/tests/ingest-conflicts.test.ts src/tests/ingest-manual.test.ts"
   },
   "dependencies": {
     "@clickhouse/client": "^1.21.0",

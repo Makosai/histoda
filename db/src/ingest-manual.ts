@@ -1,5 +1,5 @@
 import { client } from './client.js';
-import { existsSync, mkdirSync, readdirSync, renameSync, createReadStream } from 'fs';
+import fs from 'fs';
 import { join } from 'path';
 import { parse } from 'csv-parse';
 
@@ -7,11 +7,11 @@ const UPLOADS_DIR = join(process.cwd(), 'uploads');
 const PROCESSED_DIR = join(UPLOADS_DIR, 'processed');
 
 // Ensure uploads and processed directories exist
-if (!existsSync(UPLOADS_DIR)) {
-  mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
-if (!existsSync(PROCESSED_DIR)) {
-  mkdirSync(PROCESSED_DIR, { recursive: true });
+if (!fs.existsSync(PROCESSED_DIR)) {
+  fs.mkdirSync(PROCESSED_DIR, { recursive: true });
 }
 
 // Define parser columns mapping
@@ -79,7 +79,7 @@ async function processFile(filePath: string, fileName: string) {
     return;
   }
 
-  const parser = createReadStream(filePath).pipe(
+  const parser = fs.createReadStream(filePath).pipe(
     parse({
       columns: true,
       skip_empty_lines: true,
@@ -163,7 +163,7 @@ async function processFile(filePath: string, fileName: string) {
 
   // Move processed file to archive
   const destPath = join(PROCESSED_DIR, fileName);
-  renameSync(filePath, destPath);
+  fs.renameSync(filePath, destPath);
   console.log(`[Ingest: Manual] Completed and archived: ${fileName} -> uploads/processed/${fileName}`);
 }
 
@@ -171,7 +171,7 @@ async function run() {
   console.log('[Ingest: Manual] Scanning uploads directory...');
   
   try {
-    const files = readdirSync(UPLOADS_DIR, { withFileTypes: true });
+    const files = fs.readdirSync(UPLOADS_DIR, { withFileTypes: true });
     const csvFiles = files.filter(f => f.isFile() && f.name.endsWith('.csv'));
     
     if (csvFiles.length === 0) {
