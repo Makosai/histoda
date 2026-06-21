@@ -114,9 +114,23 @@
 		let filename = '';
 
 		if (activeDomain === 'climate') {
-			headers = ['Year', 'GlobalAnomaly_C', 'LocalAvgTemp_C'];
-			rows = chartData.map((d) => [d.year, d.globalAnomaly, d.tempAvg].join(','));
-			filename = `histoda_temp_${selectedStation.id}.csv`;
+			const suffix = isCelsius ? 'C' : 'F';
+			const tempFormatter = (t: number) => isCelsius ? t : parseFloat(((t * 1.8) + 32).toFixed(2));
+			const anomalyFormatter = (a: number) => isCelsius ? a : parseFloat((a * 1.8).toFixed(3));
+
+			if (viewMode === 'seasonal') {
+				headers = ['Year', 'Season', `GlobalAnomaly_${suffix}`, `LocalAvgTemp_${suffix}`];
+				rows = chartData.map((d) => [d.year, d.season, anomalyFormatter(d.globalAnomaly), tempFormatter(d.tempAvg)].join(','));
+				filename = `histoda_temp_seasonal_${selectedStation.id}.csv`;
+			} else if (viewMode === 'monthly') {
+				headers = ['Year', 'Month', `GlobalAnomaly_${suffix}`, `LocalAvgTemp_${suffix}`];
+				rows = chartData.map((d) => [d.year, d.month, anomalyFormatter(d.globalAnomaly), tempFormatter(d.tempAvg)].join(','));
+				filename = `histoda_temp_monthly_${selectedStation.id}.csv`;
+			} else {
+				headers = ['Year', `GlobalAnomaly_${suffix}`, `LocalAvgTemp_${suffix}`];
+				rows = chartData.map((d) => [d.year, anomalyFormatter(d.globalAnomaly), tempFormatter(d.tempAvg)].join(','));
+				filename = `histoda_temp_annual_${selectedStation.id}.csv`;
+			}
 		} else if (activeDomain === 'earthquakes') {
 			headers = ['Year', 'PeakMagnitude', 'EventsCount'];
 			rows = chartData.map((d) => [d.year, d.mag, d.frequency].join(','));
