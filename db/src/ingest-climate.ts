@@ -1,5 +1,8 @@
 import { client } from './client.js';
 
+const isTest = process.env.NODE_ENV === 'test';
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, isTest ? 0 : ms));
+
 interface ClimateStation {
   station_id: string;
   name: string;
@@ -97,13 +100,39 @@ async function run() {
         
         const openMeteoUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${station.latitude}&longitude=${station.longitude}&start_date=${chunkStartStr}&end_date=${chunkEndStr}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum&timezone=GMT`;
         
-        const res = await fetch(openMeteoUrl);
-        if (!res.ok) {
-          console.error(`[Ingest: Climate] Failed to fetch climate records for ${station.name} (${chunkStartStr} to ${chunkEndStr}): status ${res.status}`);
-          // Move to next chunk to avoid infinite loop
-          currentStart = new Date(currentEnd);
-          currentStart.setUTCDate(currentStart.getUTCDate() + 1);
-          continue;
+        let retries = 5;
+        let res: Response | null = null;
+        let delayMs = 2000;
+
+        while (retries > 0) {
+          try {
+            res = await fetch(openMeteoUrl);
+            if (res.ok) {
+              break;
+            }
+            if (res.status === 429) {
+              console.warn(`[Ingest: Climate] Rate limit (429) hit for ${station.name}. Retrying in ${delayMs}ms... (${retries - 1} retries left)`);
+              await delay(delayMs);
+              retries--;
+              delayMs *= 2;
+            } else {
+              console.warn(`[Ingest: Climate] HTTP error ${res.status} for ${station.name}. Retrying in ${delayMs}ms... (${retries - 1} retries left)`);
+              await delay(delayMs);
+              retries--;
+              delayMs *= 2;
+            }
+          } catch (fetchErr) {
+            console.warn(`[Ingest: Climate] Network error for ${station.name}. Retrying in ${delayMs}ms... (${retries - 1} retries left)`, fetchErr);
+            await delay(delayMs);
+            retries--;
+            delayMs *= 2;
+          }
+        }
+
+        if (!res || !res.ok) {
+          console.error(`[Ingest: Climate] Failed to fetch climate records for ${station.name} (${chunkStartStr} to ${chunkEndStr}) after retries. Aborting station ingestion to prevent database gaps.`);
+          // Break the chunk loop for this station so we do not advance max_date and leave holes
+          break;
         }
         
         const data = await res.json() as OpenMeteoResponse;
@@ -133,6 +162,9 @@ async function run() {
         // Advance to the next day after currentEnd
         currentStart = new Date(currentEnd);
         currentStart.setUTCDate(currentStart.getUTCDate() + 1);
+
+        // Sleep for 1000ms between requests to be polite and avoid rate limits
+        await delay(1000);
       }
     }
 
