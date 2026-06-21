@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<style>
+			@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&amp;display=swap');
+			.logo-text {
+				font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			}
+		</style>
+	</defs>
+	<!-- Scaled Diamond + 'histoda' Text (Horizontal width 380px, perfectly centered) -->
+	<g>
+		<!-- Diamond Symbol -->
+		<path d="M 104 218 L 142 256 L 104 294 L 66 256 Z" fill="#4f46e5" />
+
+		<!-- Title Text: histoda -->
+		<text class="logo-text" x="166" y="279" fill="#18181b" font-size="84" font-weight="600" letter-spacing="-2.6px">histoda</text>
+	</g>
+</svg>
