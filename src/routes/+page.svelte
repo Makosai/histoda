@@ -63,13 +63,26 @@
 		return [];
 	});
 
+	// Client-side caches to prevent duplicate network requests
+	const climateCache = new Map<string, any[]>();
+	const earthquakeCache = new Map<string, any[]>();
+	const conflictCache = new Map<string, any[]>();
+
 	// Fetch weather dataset only when the selected station, active domain, or view changes
 	async function loadClimateData() {
+		if (!selectedStation) return;
+		const cacheKey = `${selectedStation.id}_${viewMode}`;
+		if (climateCache.has(cacheKey)) {
+			rawWeatherData = climateCache.get(cacheKey)!;
+			return;
+		}
 		isLoading = true;
 		try {
 			const res = await fetch(`/api/temperatures?station_id=${selectedStation.id}&view=${viewMode}`);
 			const json = await res.json();
-			rawWeatherData = json.data || [];
+			const data = json.data || [];
+			climateCache.set(cacheKey, data);
+			rawWeatherData = data;
 		} catch (e) {
 			console.error('Failed to load climate dataset timeline', e);
 		} finally {
@@ -79,11 +92,19 @@
 
 	// Fetch earthquake dataset
 	async function loadEarthquakeData() {
+		if (!selectedEarthquake) return;
+		const cacheKey = `${selectedEarthquake.id}_${earthquakeViewMode}`;
+		if (earthquakeCache.has(cacheKey)) {
+			rawEarthquakeData = earthquakeCache.get(cacheKey)!;
+			return;
+		}
 		isLoading = true;
 		try {
 			const res = await fetch(`/api/earthquakes?event_id=${selectedEarthquake.id}&view=${earthquakeViewMode}`);
 			const json = await res.json();
-			rawEarthquakeData = json.data || [];
+			const data = json.data || [];
+			earthquakeCache.set(cacheKey, data);
+			rawEarthquakeData = data;
 		} catch (e) {
 			console.error('Failed to load earthquake dataset timeline', e);
 		} finally {
@@ -93,11 +114,19 @@
 
 	// Fetch conflict dataset
 	async function loadConflictData() {
+		if (!selectedConflict) return;
+		const cacheKey = `${selectedConflict.id}_${conflictViewMode}`;
+		if (conflictCache.has(cacheKey)) {
+			rawConflictData = conflictCache.get(cacheKey)!;
+			return;
+		}
 		isLoading = true;
 		try {
 			const res = await fetch(`/api/conflicts?conflict_id=${selectedConflict.id}&view=${conflictViewMode}`);
 			const json = await res.json();
-			rawConflictData = json.data || [];
+			const data = json.data || [];
+			conflictCache.set(cacheKey, data);
+			rawConflictData = data;
 		} catch (e) {
 			console.error('Failed to load conflict dataset timeline', e);
 		} finally {
@@ -107,15 +136,15 @@
 
 	// Trigger load reactively based on active domain & parameters
 	$effect(() => {
-		if (activeDomain === 'climate') {
+		if (activeDomain === 'climate' && selectedStation) {
 			const _stationId = selectedStation.id;
 			const _viewMode = viewMode;
 			loadClimateData();
-		} else if (activeDomain === 'earthquakes') {
+		} else if (activeDomain === 'earthquakes' && selectedEarthquake) {
 			const _eventId = selectedEarthquake.id;
 			const _eqView = earthquakeViewMode;
 			loadEarthquakeData();
-		} else if (activeDomain === 'conflicts') {
+		} else if (activeDomain === 'conflicts' && selectedConflict) {
 			const _conflictId = selectedConflict.id;
 			const _conflictView = conflictViewMode;
 			loadConflictData();
