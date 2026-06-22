@@ -15,7 +15,9 @@ test('Earthquake Ingest - Seeding Famous Events and Ingesting API Responses', as
     // Mock response for famous seeds exist check (return empty to force seeding)
     if (query.includes("event_id = 'valdivia'") || query.includes("event_id = 'alaska'") || 
         query.includes("event_id = 'sumatra'") || query.includes("event_id = 'tohoku'") || 
-        query.includes("event_id = 'san_francisco'")) {
+        query.includes("event_id = 'san_francisco'") || query.includes("event_id = 'tangshan'") ||
+        query.includes("event_id = 'sichuan'") || query.includes("event_id = 'haiti'") ||
+        query.includes("event_id = 'kobe'")) {
       return { json: async () => [] };
     }
 

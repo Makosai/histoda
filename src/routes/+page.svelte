@@ -7,9 +7,8 @@
 	import MetricsGrid from '$lib/components/MetricsGrid.svelte';
 	import HistoricalChart from '$lib/components/HistoricalChart.svelte';
 	
-	// Import mock data utilities
+	// Import mock data types
 	import type { Station, Earthquake, Conflict } from '$lib/mockData';
-	import { earthquakes, conflicts, generateMockSeismic, generateMockConflict } from '$lib/mockData';
 
 	// Props passed from SvelteKit page server load
 	let { data }: { data: PageData } = $props();

@@ -37,15 +37,16 @@
 	let chartDom: HTMLElement | null = $state(null);
 	let chartInstance: any = null;
 
-	// Redraw chart when chartData, activeDomain, isCelsius, viewMode, selectedSeason, or selectedMonth changes
+	// Redraw chart reactively on data or layout state changes
 	$effect(() => {
-		// Explicit dependencies to track reactivity in Svelte 5
 		const _data = chartData;
 		const _domain = activeDomain;
 		const _unit = isCelsius;
 		const _mode = viewMode;
 		const _season = selectedSeason;
 		const _month = selectedMonth;
+		const _eqView = earthquakeViewMode;
+		const _conflictView = conflictViewMode;
 
 		if (chartInstance) {
 			updateChart();
@@ -354,6 +355,10 @@
 			const magnitudes = chartData.map((d) => d.mag);
 			const frequencies = chartData.map((d) => d.frequency);
 
+			const isGlobal = earthquakeViewMode === 'global';
+			const magSeriesName = isGlobal ? 'Max Magnitude' : 'Peak Magnitude';
+			const freqSeriesName = isGlobal ? 'Total Earthquakes (M6+)' : 'Activity Count (M4+)';
+
 			option = {
 				tooltip: {
 					trigger: 'axis',
@@ -366,7 +371,7 @@
 						let html = `<div style="padding: 4px 8px; font-family: Outfit;">
 							<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
 						params.forEach((param: any) => {
-							const suffix = param.seriesName === 'Peak Magnitude' ? ' Mw' : ' events';
+							const suffix = param.seriesName.includes('Magnitude') ? ' Mw' : ' events';
 							html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
 								<span style="color: #71717a;">${param.seriesName}</span>
 								<span style="font-weight: 500; color: ${param.color}">${param.value}${suffix}</span>
@@ -377,7 +382,7 @@
 					}
 				},
 				legend: {
-					data: ['Peak Magnitude', 'Activity Count (M4+)'],
+					data: [magSeriesName, freqSeriesName],
 					textStyle: { fontFamily: 'Outfit', color: '#71717a' },
 					bottom: 0
 				},
@@ -409,23 +414,23 @@
 				],
 				series: [
 					{
-						name: 'Peak Magnitude',
+						name: magSeriesName,
 						type: 'line',
 						data: magnitudes,
-						symbol: 'circle',
+						symbol: isGlobal ? 'none' : 'circle',
 						symbolSize: 6,
 						smooth: true,
 						lineStyle: { width: 2.5, color: '#dc2626' },
 						itemStyle: { color: '#dc2626' }
 					},
 					{
-						name: 'Activity Count (M4+)',
+						name: freqSeriesName,
 						type: 'bar',
 						yAxisIndex: 1,
 						data: frequencies,
-						barWidth: '40%',
+						barWidth: isGlobal ? '60%' : '40%',
 						itemStyle: {
-							color: 'rgba(113, 113, 122, 0.2)',
+							color: isGlobal ? 'rgba(239, 68, 68, 0.15)' : 'rgba(113, 113, 122, 0.2)',
 							borderRadius: [4, 4, 0, 0]
 						}
 					}
@@ -433,95 +438,197 @@
 			};
 		} else if (activeDomain === 'conflicts') {
 			const years = chartData.map((d) => d.year);
-			const intensities = chartData.map((d) => d.intensity);
-			const battleCounts = chartData.map((d) => d.battleCount);
+			const isGlobal = conflictViewMode === 'global';
 
-			option = {
-				tooltip: {
-					trigger: 'axis',
-					backgroundColor: '#ffffff',
-					borderColor: '#e4e4e7',
-					borderWidth: 1,
-					textStyle: { color: '#18181b', fontFamily: 'Outfit' },
-					formatter: function (params: any) {
-						let year = params[0].name;
-						let html = `<div style="padding: 4px 8px; font-family: Outfit;">
-							<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
-						params.forEach((param: any) => {
-							const suffix = param.seriesName === 'Conflict Intensity' ? ' %' : ' battles';
-							html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
-								<span style="color: #71717a;">${param.seriesName}</span>
-								<span style="font-weight: 500; color: ${param.color}">${param.value}${suffix}</span>
-							</div>`;
-						});
-						html += '</div>';
-						return html;
-					}
-				},
-				legend: {
-					data: ['Conflict Intensity', 'Active Battles'],
-					textStyle: { fontFamily: 'Outfit', color: '#71717a' },
-					bottom: 0
-				},
-				grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
-				xAxis: {
-					type: 'category',
-					boundaryGap: false,
-					data: years,
-					axisLine: { lineStyle: { color: '#e4e4e7' } },
-					axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
-				},
-				yAxis: [
-					{
-						type: 'value',
-						name: 'Intensity Index (%)',
-						min: 0,
-						max: 100,
-						nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
-						splitLine: { lineStyle: { color: '#f4f4f5', type: 'dashed' } },
-						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
-					},
-					{
-						type: 'value',
-						name: 'Battles Count',
-						nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
-						splitLine: { show: false },
-						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
-					}
-				],
-				series: [
-					{
-						name: 'Conflict Intensity',
-						type: 'line',
-						data: intensities,
-						symbol: 'none',
-						smooth: true,
-						lineStyle: { width: 2.5, color: '#4f46e5' },
-						areaStyle: {
-							color: {
-								type: 'linear',
-								x: 0, y: 0, x2: 0, y2: 1,
-								colorStops: [
-									{ offset: 0, color: 'rgba(79, 70, 229, 0.15)' },
-									{ offset: 1, color: 'rgba(79, 70, 229, 0)' }
-								]
-							}
-						},
-						itemStyle: { color: '#4f46e5' }
-					},
-					{
-						name: 'Active Battles',
-						type: 'bar',
-						yAxisIndex: 1,
-						data: battleCounts,
-						barWidth: '40%',
-						itemStyle: {
-							color: 'rgba(239, 68, 68, 0.3)',
-							borderRadius: [4, 4, 0, 0]
+			if (isGlobal) {
+				const activeWars = chartData.map((d) => d.activeWars);
+				const totalCasualties = chartData.map((d) => d.totalCasualties);
+
+				option = {
+					tooltip: {
+						trigger: 'axis',
+						backgroundColor: '#ffffff',
+						borderColor: '#e4e4e7',
+						borderWidth: 1,
+						textStyle: { color: '#18181b', fontFamily: 'Outfit' },
+						formatter: function (params: any) {
+							let year = params[0].name;
+							let html = `<div style="padding: 4px 8px; font-family: Outfit;">
+								<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
+							params.forEach((param: any) => {
+								const valStr = param.seriesName === 'Est. Total Casualties' 
+									? param.value.toLocaleString()
+									: param.value;
+								html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
+									<span style="color: #71717a;">${param.seriesName}</span>
+									<span style="font-weight: 500; color: ${param.color}">${valStr}</span>
+								</div>`;
+							});
+							html += '</div>';
+							return html;
 						}
-					}
-				]
-			};
+					},
+					legend: {
+						data: ['Active Wars Count', 'Est. Total Casualties'],
+						textStyle: { fontFamily: 'Outfit', color: '#71717a' },
+						bottom: 0
+					},
+					grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
+					xAxis: {
+						type: 'category',
+						boundaryGap: false,
+						data: years,
+						axisLine: { lineStyle: { color: '#e4e4e7' } },
+						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+					},
+					yAxis: [
+						{
+							type: 'value',
+							name: 'Active Wars Count',
+							nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							splitLine: { lineStyle: { color: '#f4f4f5', type: 'dashed' } },
+							axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+						},
+						{
+							type: 'value',
+							name: 'Annual Casualties',
+							nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							splitLine: { show: false },
+							axisLabel: { 
+								fontFamily: 'Outfit', 
+								color: '#71717a',
+								formatter: function (value: number) {
+									if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+									if (value >= 1e3) return (value / 1e3).toFixed(0) + 'k';
+									return value;
+								}
+							}
+						}
+					],
+					series: [
+						{
+							name: 'Active Wars Count',
+							type: 'line',
+							data: activeWars,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: '#8b5cf6' },
+							areaStyle: {
+								color: {
+									type: 'linear',
+									x: 0, y: 0, x2: 0, y2: 1,
+									colorStops: [
+										{ offset: 0, color: 'rgba(139, 92, 246, 0.15)' },
+										{ offset: 1, color: 'rgba(139, 92, 246, 0)' }
+									]
+								}
+							},
+							itemStyle: { color: '#8b5cf6' }
+						},
+						{
+							name: 'Est. Total Casualties',
+							type: 'bar',
+							yAxisIndex: 1,
+							data: totalCasualties,
+							barWidth: '60%',
+							itemStyle: {
+								color: 'rgba(239, 68, 68, 0.3)',
+								borderRadius: [4, 4, 0, 0]
+							}
+						}
+					]
+				};
+			} else {
+				const intensities = chartData.map((d) => d.intensity);
+				const battleCounts = chartData.map((d) => d.battleCount);
+
+				option = {
+					tooltip: {
+						trigger: 'axis',
+						backgroundColor: '#ffffff',
+						borderColor: '#e4e4e7',
+						borderWidth: 1,
+						textStyle: { color: '#18181b', fontFamily: 'Outfit' },
+						formatter: function (params: any) {
+							let year = params[0].name;
+							let html = `<div style="padding: 4px 8px; font-family: Outfit;">
+								<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
+							params.forEach((param: any) => {
+								const suffix = param.seriesName === 'Conflict Intensity' ? ' %' : ' battles';
+								html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
+									<span style="color: #71717a;">${param.seriesName}</span>
+									<span style="font-weight: 500; color: ${param.color}">${param.value}${suffix}</span>
+								</div>`;
+							});
+							html += '</div>';
+							return html;
+						}
+					},
+					legend: {
+						data: ['Conflict Intensity', 'Active Battles'],
+						textStyle: { fontFamily: 'Outfit', color: '#71717a' },
+						bottom: 0
+					},
+					grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
+					xAxis: {
+						type: 'category',
+						boundaryGap: false,
+						data: years,
+						axisLine: { lineStyle: { color: '#e4e4e7' } },
+						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+					},
+					yAxis: [
+						{
+							type: 'value',
+							name: 'Intensity Index (%)',
+							min: 0,
+							max: 100,
+							nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							splitLine: { lineStyle: { color: '#f4f4f5', type: 'dashed' } },
+							axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+						},
+						{
+							type: 'value',
+							name: 'Battles Count',
+							nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
+							splitLine: { show: false },
+							axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
+						}
+					],
+					series: [
+						{
+							name: 'Conflict Intensity',
+							type: 'line',
+							data: intensities,
+							symbol: 'none',
+							smooth: true,
+							lineStyle: { width: 2.5, color: '#4f46e5' },
+							areaStyle: {
+								color: {
+									type: 'linear',
+									x: 0, y: 0, x2: 0, y2: 1,
+									colorStops: [
+										{ offset: 0, color: 'rgba(79, 70, 229, 0.15)' },
+										{ offset: 1, color: 'rgba(79, 70, 229, 0)' }
+									]
+								}
+							},
+							itemStyle: { color: '#4f46e5' }
+						},
+						{
+							name: 'Active Battles',
+							type: 'bar',
+							yAxisIndex: 1,
+							data: battleCounts,
+							barWidth: '40%',
+							itemStyle: {
+								color: 'rgba(239, 68, 68, 0.3)',
+								borderRadius: [4, 4, 0, 0]
+							}
+						}
+					]
+				};
+			}
 		}
 
 		chartInstance.setOption(option, true);
@@ -554,8 +661,18 @@
 		<h3>
 			{#if activeDomain === 'climate'}
 				Temperature & Climate Anomaly Trends
-			{:else}
-				Seismic or battle timelines & indexes metrics
+			{:else if activeDomain === 'earthquakes'}
+				{#if earthquakeViewMode === 'global'}
+					Global Seismic Activity & Magnitudes (1880 - 2026)
+				{:else}
+					Local Seismic Activity Timeline
+				{/if}
+			{:else if activeDomain === 'conflicts'}
+				{#if conflictViewMode === 'global'}
+					Century Conflict Frequency & Casualties Timeline (1920 - 2026)
+				{:else}
+					Conflict Battle Intensity Timeline
+				{/if}
 			{/if}
 		</h3>
 		
@@ -641,6 +758,44 @@
 							{/each}
 						</select>
 					</div>
+				</div>
+			</div>
+		{:else if activeDomain === 'earthquakes'}
+			<div class="climate-controls">
+				<div class="view-toggle">
+					<button 
+						class="toggle-btn" 
+						class:active={earthquakeViewMode === 'event'} 
+						onclick={() => { earthquakeViewMode = 'event'; }}
+					>
+						Famous Events
+					</button>
+					<button 
+						class="toggle-btn" 
+						class:active={earthquakeViewMode === 'global'} 
+						onclick={() => { earthquakeViewMode = 'global'; }}
+					>
+						Global Trends (140Y)
+					</button>
+				</div>
+			</div>
+		{:else if activeDomain === 'conflicts'}
+			<div class="climate-controls">
+				<div class="view-toggle">
+					<button 
+						class="toggle-btn" 
+						class:active={conflictViewMode === 'event'} 
+						onclick={() => { conflictViewMode = 'event'; }}
+					>
+						Famous Conflicts
+					</button>
+					<button 
+						class="toggle-btn" 
+						class:active={conflictViewMode === 'global'} 
+						onclick={() => { conflictViewMode = 'global'; }}
+					>
+						Century Timeline
+					</button>
 				</div>
 			</div>
 		{/if}
