@@ -63,6 +63,8 @@
 	let bookmarks = $state<string[]>([]);
 	let hasMounted = $state(false);
 	let showMethodology = $state(false);
+	let activeMethodologyTab = $state<'climate' | 'seismic' | 'conflicts' | 'completeness'>('climate');
+
 
 	// Derived chartData updates reactively in the browser (user CPU)
 	let chartData = $derived.by(() => {
@@ -381,54 +383,186 @@
 	<div class="modal-backdrop" onclick={() => { showMethodology = false; }}>
 		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
 			<div class="modal-header">
-				<h3>🔬 Scientific Methodology, Provenance & Completeness</h3>
+				<h3>🔬 Scientific Methodology & Data Provenance</h3>
 				<button class="close-btn" onclick={() => { showMethodology = false; }}>&times;</button>
 			</div>
+			
+			<div class="methodology-tabs">
+				<button class="tab-pill" class:active={activeMethodologyTab === 'climate'} onclick={() => activeMethodologyTab = 'climate'}>🌡️ Climate</button>
+				<button class="tab-pill" class:active={activeMethodologyTab === 'seismic'} onclick={() => activeMethodologyTab = 'seismic'}>🌋 Seismology</button>
+				<button class="tab-pill" class:active={activeMethodologyTab === 'conflicts'} onclick={() => activeMethodologyTab = 'conflicts'}>⚔️ Conflicts</button>
+				<button class="tab-pill" class:active={activeMethodologyTab === 'completeness'} onclick={() => activeMethodologyTab = 'completeness'}>⚠️ Completeness</button>
+			</div>
+
 			<div class="modal-body">
-				<p class="modal-intro">
-					Histoda integrates actual historical records with mathematical modeling. Below is the provenance of what data exists in the database, what is missing, and how gaps are bridged.
-				</p>
+				{#if activeMethodologyTab === 'climate'}
+					<div class="methodology-section animate-fade-in-quick">
+						<p class="modal-intro">
+							Histoda integrates verified meteorological database records with macro climate datasets and localized temperature approximation models.
+						</p>
 
-				<section class="methodology-section">
-					<h4>🌡️ Climate & Temperatures</h4>
-					<p><strong>Primary Sources:</strong> NASA GISTEMP v4 & NOAA Global Historical Climatology Network (GHCN-Daily) via Open-Meteo.</p>
-					<div class="data-lists">
-						<p class="data-have">🟢 <strong>We Have:</strong> Station coordinates/elevation, global annual temperature anomalies, and daily station temperature & precipitation records from 1970 to 2026.</p>
-						<p class="data-missing">🔴 <strong>We Miss:</strong> Pre-1970 station-level daily logs (local database gap) and secondary parameters (humidity, wind speed).</p>
+						<div class="metadata-grid">
+							<div class="metadata-item">
+								<strong>Primary Sources:</strong> 
+								<span>NASA Goddard Institute for Space Studies (GISTEMP v4) & NOAA Global Historical Climatology Network (GHCN-Daily) archives.</span>
+							</div>
+							<div class="metadata-item">
+								<strong>Reference Baseline:</strong>
+								<span>Anomalies and local trends are calculated relative to the standard 1960–1990 global average temperature baseline: <code class="math-inline">T_baseline ≈ 14.0°C (57.2°F)</code>.</span>
+							</div>
+						</div>
+
+						<div class="completeness-comparison">
+							<div class="comparison-card have">
+								<h5>🟢 Verified Data (ClickHouse)</h5>
+								<ul>
+									<li>Station metadata (coordinates, elevation, names)</li>
+									<li>NASA GISTEMP global annual temperature anomalies</li>
+									<li>Daily local weather station records from 1970 to 2026</li>
+								</ul>
+							</div>
+							<div class="comparison-card miss">
+								<h5>🔴 Modeled Gaps & Limitations</h5>
+								<ul>
+									<li>Pre-1970 localized station daily weather logs</li>
+									<li>Secondary parameters (humidity, wind speed, solar radiation)</li>
+								</ul>
+							</div>
+						</div>
+
+						<div class="formula-block">
+							<h5>Mathematical Formulations</h5>
+							<div class="formula-item">
+								<h6>Local Temperature Anomaly</h6>
+								<code class="math-display">A_local(y, m) = T_avg(y, m) - T_baseline</code>
+								<p>Calculates the deviation from the historic 1960–1990 climatological baseline.</p>
+							</div>
+							<div class="formula-item">
+								<h6>Microclimate Sensitivity Correlation</h6>
+								<code class="math-display">A_local(y) ≈ γ · A_global(y) + ε</code>
+								<p>Relates local anomalies to global changes. The sensitivity factor <code class="math-inline">γ</code> ranges from 0.9 (e.g., Lagos, tropical thermal inertia) to 1.3 (e.g., New York, Tokyo, urban heat island/high-latitude).</p>
+							</div>
+							<div class="formula-item">
+								<h6>Pre-1970 Fallback Temperature Curve</h6>
+								<code class="math-display">T_avg(y, m) = T_base + [ (R/2) · sin((m-6)π/6) ] + (ΔA_global(y) · γ) + ε_noise</code>
+								<p>Models baseline seasonal variations ($R$ = station temperature range, $m$ = month index 1–12) augmented by the long-term global warming trend.</p>
+							</div>
+						</div>
 					</div>
-					<p class="modeling-desc"><strong>Modeling Gaps (1880–1969):</strong> Extrapolated using seasonal waves shifted by annual global anomalies:
-						<code class="math">T_avg = T_base + [ (R/2) * sin((m-6)π/6) ] + (Anomaly * C_local) + Noise</code>
-					</p>
-				</section>
+				{:else if activeMethodologyTab === 'seismic'}
+					<div class="methodology-section animate-fade-in-quick">
+						<p class="modal-intro">
+							Seismological visualizations combine official global epicenter catalogs with standard decay and magnitude frequency distribution equations.
+						</p>
 
-				<section class="methodology-section">
-					<h4>🌋 Seismic & Earthquakes</h4>
-					<p><strong>Primary Sources:</strong> USGS Advanced National Seismic System (ANSS) ComCat API.</p>
-					<div class="data-lists">
-						<p class="data-have">🟢 <strong>We Have:</strong> Magnitude, epicenter coordinates, depth, and casualty metadata for major events, and global yearly aggregates from 1880 to 2026.</p>
-						<p class="data-missing">🔴 <strong>We Miss:</strong> Real-time historical aftershock catalog listings directly from external APIs during interactive queries.</p>
+						<div class="metadata-grid">
+							<div class="metadata-item">
+								<strong>Primary Sources:</strong> 
+								<span>USGS Advanced National Seismic System (ANSS) Comprehensive Earthquake Catalog (ComCat).</span>
+							</div>
+							<div class="metadata-item">
+								<strong>Real-Time Sync:</strong>
+								<span>A background sync daemon continuously queries the USGS API for global events of magnitude <code class="math-inline">M ≥ 6.0</code>.</span>
+							</div>
+						</div>
+
+						<div class="completeness-comparison">
+							<div class="comparison-card have">
+								<h5>🟢 Verified Data (ClickHouse)</h5>
+								<ul>
+									<li>Main shock epicenters, magnitudes, depths, and casualty statistics</li>
+									<li>Global yearly earthquake frequency statistics (1880–2026)</li>
+								</ul>
+							</div>
+							<div class="comparison-card miss">
+								<h5>🔴 Modeled Gaps & Limitations</h5>
+								<ul>
+									<li>Real-time query of high-resolution local aftershock chains directly via API (prevented by rate-limits and latency constraints)</li>
+								</ul>
+							</div>
+						</div>
+
+						<div class="formula-block">
+							<h5>Mathematical Formulations</h5>
+							<div class="formula-item">
+								<h6>Aftershock Decay (Omori's Law)</h6>
+								<code class="math-display">n(t) = k / (t + c)^p</code>
+								<p>Models the exponential decay of aftershocks over time. <code class="math-inline">p = 1.0</code> is the decay exponent, <code class="math-inline">c = 0.1</code> represents a time-offset constant, and the productivity constant <code class="math-inline">k = 15 · 1.5^(M - 5.0)</code> scales exponentially with main shock magnitude <code class="math-inline">M</code>.</p>
+							</div>
+							<div class="formula-item">
+								<h6>Magnitude Distribution (Gutenberg-Richter Law)</h6>
+								<code class="math-display">log10 N(M) = a - bM</code>
+								<p>Determines aftershock magnitude frequency. Standard scaling parameter <code class="math-inline">b = 1.0</code> is used. The sequence is bound between <code class="math-inline">M_min = 3.0</code> and <code class="math-inline">M_max = M_main - 1.0</code>.</p>
+							</div>
+						</div>
 					</div>
-					<p class="modeling-desc"><strong>Modeling Gaps (Aftershocks):</strong> Daily 30-day aftershock timelines are modeled via <strong>Omori's Law</strong> for frequency decay:
-						<code class="math">n(t) = k / (t + c)^p</code> and the <strong>Gutenberg-Richter Law</strong> for magnitude distribution:
-						<code class="math">log10(N) = a - bM</code>.
-					</p>
-				</section>
+				{:else if activeMethodologyTab === 'conflicts'}
+					<div class="methodology-section animate-fade-in-quick">
+						<p class="modal-intro">
+							Conflict visualizations blend historical battle registries with mathematical progression curves.
+						</p>
 
-				<section class="methodology-section">
-					<h4>⚔️ Wars & Conflicts</h4>
-					<p><strong>Primary Sources:</strong> Correlates of War (COW) Project v5.0 & Uppsala Conflict Data Program (UCDP).</p>
-					<div class="data-lists">
-						<p class="data-have">🟢 <strong>We Have:</strong> Conflict spans (years), combatants lists, region, total casualties, and global century timelines of active wars since 1920.</p>
-						<p class="data-missing">🔴 <strong>We Miss:</strong> Day-by-day battlefield coordinates, troop movements, and localized conflicts below 1,000 casualties.</p>
+						<div class="metadata-grid">
+							<div class="metadata-item">
+								<strong>Primary Sources:</strong> 
+								<span>Correlates of War (COW) Project (v5.0) & Uppsala Conflict Data Program (UCDP) Battle-Related Deaths Dataset.</span>
+							</div>
+						</div>
+
+						<div class="completeness-comparison">
+							<div class="comparison-card have">
+								<h5>🟢 Verified Data (ClickHouse)</h5>
+								<ul>
+									<li>Verified start and end years, combatants, regions, and estimated total casualties</li>
+									<li>Annual global active conflict counts and aggregate annual deaths (since 1920)</li>
+								</ul>
+							</div>
+							<div class="comparison-card miss">
+								<h5>🔴 Modeled Gaps & Limitations</h5>
+								<ul>
+									<li>Day-by-day battlefield coordinates, local troop movements</li>
+									<li>Localized skirmishes and minor conflicts resulting in fewer than 1,000 casualties</li>
+								</ul>
+							</div>
+						</div>
+
+						<div class="formula-block">
+							<h5>Mathematical Formulations</h5>
+							<div class="formula-item">
+								<h6>Conflict Intensity Curve</h6>
+								<code class="math-display">I(p) = 40 + 50 · sin(p · π) + 10 · cos(y · 5)</code>
+								<p>Simulates conflict intensity progression. The parameter <code class="math-inline">p = (y - y_start) / (y_end - y_start)</code> is the progress fraction ($0 \le p \le 1$).</p>
+							</div>
+							<div class="formula-item">
+								<h6>Daily Battle Count Estimate</h6>
+								<code class="math-display">B(t) = ⌊ I(t) / 3 ⌋ + η</code>
+								<p>Estimates battle occurrences over the timeline, where <code class="math-inline">η</code> represents random skirmish noise modeling minor engagements during peace or low engagement.</p>
+							</div>
+						</div>
 					</div>
-					<p class="modeling-desc"><strong>Modeling Gaps (Battle Indices):</strong> Progression timelines are simulated using a sinusoidal bell curve peaking at the conflict's mid-point:
-						<code class="math">Intensity = 40 + 50 * sin(p * π) + Noise</code>.
-					</p>
-				</section>
+				{:else if activeMethodologyTab === 'completeness'}
+					<div class="methodology-section animate-fade-in-quick">
+						<p class="modal-intro">
+							This dashboard is designed to provide visual timelines and historical context. It is essential to distinguish between peer-reviewed historical records and mathematical models.
+						</p>
 
-				<div class="scientific-disclaimer">
-					<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. local battle intensity index, daily aftershock counts, pre-1970 weather records) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
-				</div>
+						<div class="scientific-disclaimer" style="margin-top: 0;">
+							<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata (spans of wars, total casualties, climate station coordinates, earthquake locations, and main shock magnitudes) represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. local battle intensity index, daily aftershock counts, pre-1970 weather records) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
+						</div>
+
+						<div class="completeness-guide">
+							<h5>How to Interpret the Dashboard Data</h5>
+							<div class="guide-item">
+								<span class="badge badge-clickhouse">🟢 ClickHouse</span>
+								<p>Denotes that the active timeline query is fully populated by peer-reviewed datasets stored directly in the database.</p>
+							</div>
+							<div class="guide-item">
+								<span class="badge badge-mock">🟡 Simulated</span>
+								<p>Denotes that the active timeline contains mathematical simulations or seasonal/statistical extrapolations due to historical data gaps.</p>
+							</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -580,7 +714,7 @@
 		width: 90%;
 		max-width: 600px;
 		max-height: 85vh;
-		overflow-y: auto;
+		overflow: hidden; /* Prevent content scrollbar from clipping outer rounded corners */
 		box-shadow: var(--shadow-lg);
 		display: flex;
 		flex-direction: column;
@@ -627,89 +761,311 @@
 		color: var(--text-primary);
 	}
 
+	/* Segmented Pill Tabs Navigation */
+	.methodology-tabs {
+		display: flex;
+		background: var(--bg-canvas);
+		border-bottom: 1px solid var(--border-color);
+		padding: 0.4rem 1.25rem;
+		gap: 0.35rem;
+		overflow-x: auto;
+		scrollbar-width: none; /* Hide scrollbar for tabs on small screens */
+	}
+	.methodology-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.tab-pill {
+		background: transparent;
+		color: var(--text-secondary);
+		border: none;
+		border-radius: var(--radius-md);
+		padding: 0.45rem 0.75rem;
+		font-size: 0.775rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		white-space: nowrap;
+	}
+
+	.tab-pill:hover {
+		color: var(--text-primary);
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.tab-pill.active {
+		background: var(--color-accent-soft);
+		color: var(--color-accent);
+		box-shadow: inset 0 0 0 1px var(--color-accent-border);
+		font-weight: 600;
+	}
+
 	.modal-body {
 		padding: 1.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
 		text-align: left;
+		overflow-y: auto; /* Enable scrolling exclusively inside the body */
+		flex: 1;
 	}
 
 	.methodology-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 1.25rem;
 	}
 
 	.methodology-section h4 {
-		margin: 0 0 0.25rem 0;
-		font-size: 0.85rem;
+		margin: 0;
+		font-size: 0.95rem;
 		font-weight: 600;
 		color: var(--text-primary);
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
 	}
 
-	.methodology-section p {
+	.section-intro {
 		margin: 0;
-		font-size: 0.775rem;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		line-height: 1.45;
+	}
+
+	/* Metadata block grid styling */
+	.metadata-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.75rem;
+		background: var(--bg-canvas);
+		border: 1px solid var(--border-color);
+		padding: 0.85rem 1rem;
+		border-radius: var(--radius-md);
+	}
+
+	.metadata-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		font-size: 0.725rem;
+	}
+
+	.metadata-item strong {
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+
+	.metadata-item span {
 		color: var(--text-secondary);
 		line-height: 1.4;
 	}
 
-	.math {
-		background: var(--bg-canvas);
-		padding: 0.15rem 0.35rem;
-		border-radius: var(--radius-sm);
-		font-family: monospace;
-		font-size: 0.75rem;
+	/* Have vs Miss comparison layout */
+	.completeness-comparison {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+	}
+
+	@media (max-width: 520px) {
+		.completeness-comparison {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.comparison-card {
+		padding: 0.85rem 1rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--border-color);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.comparison-card.have {
+		background: rgba(16, 185, 129, 0.02);
+		border-color: rgba(16, 185, 129, 0.12);
+	}
+
+	.comparison-card.miss {
+		background: rgba(239, 68, 68, 0.02);
+		border-color: rgba(239, 68, 68, 0.12);
+	}
+
+	.comparison-card h5 {
+		margin: 0;
+		font-size: 0.775rem;
+		font-weight: 600;
+	}
+
+	.comparison-card.have h5 {
+		color: rgb(16, 185, 129);
+	}
+
+	.comparison-card.miss h5 {
+		color: rgb(239, 68, 68);
+	}
+
+	.comparison-card ul {
+		margin: 0;
+		padding-left: 1.1rem;
+		font-size: 0.725rem;
+		color: var(--text-secondary);
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		line-height: 1.4;
+	}
+
+	/* Formula container styling */
+	.formula-block {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.formula-block h5 {
+		margin: 0;
+		font-size: 0.8rem;
+		font-weight: 600;
 		color: var(--text-primary);
 	}
 
-	.scientific-disclaimer {
-		background: rgba(239, 68, 68, 0.05);
-		border: 1px solid rgba(239, 68, 68, 0.15);
-		padding: 0.75rem 1rem;
+	.formula-item {
+		background: var(--bg-canvas);
+		border: 1px solid var(--border-color);
 		border-radius: var(--radius-md);
-		margin-top: 0.5rem;
+		padding: 0.75rem 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.formula-item h6 {
+		margin: 0;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.math-display {
+		font-family: monospace;
+		font-size: 0.75rem;
+		background: rgba(0, 0, 0, 0.15);
+		padding: 0.4rem 0.6rem;
+		border-radius: var(--radius-sm);
+		color: var(--color-accent);
+		overflow-x: auto;
+		display: block;
+		white-space: pre-wrap;
+		border: 1px solid var(--border-color);
+	}
+
+	.math-inline {
+		font-family: monospace;
+		font-size: 0.75rem;
+		background: rgba(0, 0, 0, 0.15);
+		padding: 0.1rem 0.3rem;
+		border-radius: var(--radius-sm);
+		color: var(--color-accent);
+		border: 1px solid var(--border-color);
+	}
+
+	.formula-item p {
+		margin: 0;
+		font-size: 0.7rem;
+		color: var(--text-secondary);
+		line-height: 1.4;
+	}
+
+	/* Scientific disclaimer block */
+	.scientific-disclaimer {
+		background: rgba(239, 68, 68, 0.04);
+		border: 1px solid rgba(239, 68, 68, 0.12);
+		padding: 0.85rem 1rem;
+		border-radius: var(--radius-md);
 	}
 
 	.scientific-disclaimer p {
 		margin: 0;
 		font-size: 0.725rem;
 		color: #ef4444;
-		line-height: 1.4;
+		line-height: 1.45;
+	}
+
+	/* Completeness guide legends */
+	.completeness-guide {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		background: var(--bg-canvas);
+		border: 1px solid var(--border-color);
+		padding: 1rem;
+		border-radius: var(--radius-md);
+	}
+
+	.completeness-guide h5 {
+		margin: 0;
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.guide-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+
+	.badge {
+		font-size: 0.65rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.2rem 0.4rem;
+		border-radius: var(--radius-sm);
+		white-space: nowrap;
+	}
+
+	.badge-clickhouse {
+		background: rgba(16, 185, 129, 0.08);
+		color: rgb(16, 185, 129);
+		border: 1px solid rgba(16, 185, 129, 0.16);
+	}
+
+	.badge-mock {
+		background: rgba(245, 158, 11, 0.08);
+		color: rgb(245, 158, 11);
+		border: 1px solid rgba(245, 158, 11, 0.16);
+	}
+
+	.guide-item p {
+		margin: 0;
+		font-size: 0.725rem;
+		color: var(--text-secondary);
+		line-height: 1.45;
 	}
 
 	.modal-intro {
 		font-size: 0.8rem;
 		color: var(--text-secondary);
 		line-height: 1.45;
-		margin-bottom: 0.5rem;
+		margin: 0;
 	}
 
-	.data-lists {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		background: var(--bg-canvas);
-		padding: 0.6rem 0.8rem;
-		border-radius: var(--radius-md);
-		border: 1px solid var(--border-color);
-		margin: 0.25rem 0;
+	.animate-fade-in-quick {
+		animation: fadeInQuick 0.15s ease-out;
 	}
 
-	.data-have, .data-missing {
-		margin: 0 !important;
-		font-size: 0.725rem !important;
-		line-height: 1.35 !important;
-	}
-
-	.modeling-desc {
-		font-size: 0.725rem !important;
-		line-height: 1.4 !important;
-		color: var(--text-secondary);
-		margin-top: 0.25rem;
+	@keyframes fadeInQuick {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 </style>
