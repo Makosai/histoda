@@ -381,39 +381,53 @@
 	<div class="modal-backdrop" onclick={() => { showMethodology = false; }}>
 		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
 			<div class="modal-header">
-				<h3>🔬 Scientific Methodology & Data Provenance</h3>
+				<h3>🔬 Scientific Methodology, Provenance & Completeness</h3>
 				<button class="close-btn" onclick={() => { showMethodology = false; }}>&times;</button>
 			</div>
 			<div class="modal-body">
+				<p class="modal-intro">
+					Histoda integrates actual historical records with mathematical modeling. Below is the provenance of what data exists in the database, what is missing, and how gaps are bridged.
+				</p>
+
 				<section class="methodology-section">
 					<h4>🌡️ Climate & Temperatures</h4>
-					<p><strong>Primary Source:</strong> NASA GISTEMP (Global Temperature Anomaly) & NOAA Global Historical Climatology Network (GHCN-Daily).</p>
-					<p><strong>Baseline Reference:</strong> Anomalies are computed relative to the 1960–1990 global average temperature (~14.0°C / 57.2°F).</p>
-					<p><strong>Formula:</strong> Anomaly = Local average temperature minus baseline reference temperature.</p>
+					<p><strong>Primary Sources:</strong> NASA GISTEMP v4 & NOAA Global Historical Climatology Network (GHCN-Daily) via Open-Meteo.</p>
+					<div class="data-lists">
+						<p class="data-have">🟢 <strong>We Have:</strong> Station coordinates/elevation, global annual temperature anomalies, and daily station temperature & precipitation records from 1970 to 2026.</p>
+						<p class="data-missing">🔴 <strong>We Miss:</strong> Pre-1970 station-level daily logs (local database gap) and secondary parameters (humidity, wind speed).</p>
+					</div>
+					<p class="modeling-desc"><strong>Modeling Gaps (1880–1969):</strong> Extrapolated using seasonal waves shifted by annual global anomalies:
+						<code class="math">T_avg = T_base + [ (R/2) * sin((m-6)π/6) ] + (Anomaly * C_local) + Noise</code>
+					</p>
 				</section>
 
 				<section class="methodology-section">
 					<h4>🌋 Seismic & Earthquakes</h4>
-					<p><strong>Primary Source:</strong> USGS ANSS Comprehensive Earthquake Catalog (ComCat) API.</p>
-					<p><strong>Aftershock Decay:</strong> Modeled using **Omori's Law** for frequency decay:
-						<code class="math">n(t) = k / (c + t)^p</code> (where <em>c = 0.1</em>, <em>p = 1.0</em>, and <em>k</em> scales exponentially with the main shock magnitude).
-					</p>
-					<p><strong>Magnitude Distribution:</strong> Modeled using the **Gutenberg-Richter Law**:
-						<code class="math">log10(N) = a - bM</code> (with <em>b = 1.0</em> for standard seismic size scaling).
+					<p><strong>Primary Sources:</strong> USGS Advanced National Seismic System (ANSS) ComCat API.</p>
+					<div class="data-lists">
+						<p class="data-have">🟢 <strong>We Have:</strong> Magnitude, epicenter coordinates, depth, and casualty metadata for major events, and global yearly aggregates from 1880 to 2026.</p>
+						<p class="data-missing">🔴 <strong>We Miss:</strong> Real-time historical aftershock catalog listings directly from external APIs during interactive queries.</p>
+					</div>
+					<p class="modeling-desc"><strong>Modeling Gaps (Aftershocks):</strong> Daily 30-day aftershock timelines are modeled via <strong>Omori's Law</strong> for frequency decay:
+						<code class="math">n(t) = k / (t + c)^p</code> and the <strong>Gutenberg-Richter Law</strong> for magnitude distribution:
+						<code class="math">log10(N) = a - bM</code>.
 					</p>
 				</section>
 
 				<section class="methodology-section">
 					<h4>⚔️ Wars & Conflicts</h4>
-					<p><strong>Primary Source:</strong> Correlates of War (COW) Project & Uppsala Conflict Data Program (UCDP).</p>
-					<p><strong>Conflict Intensity Curve:</strong> For individual events, battle intensity is modeled over the war's span using a bell-curve (sine wave) peaking at mid-conflict, supplemented with random skirmish noise:
-						<code class="math">Intensity(p) = 40 + 50 * sin(p * &pi;) + CosNoise</code>
+					<p><strong>Primary Sources:</strong> Correlates of War (COW) Project v5.0 & Uppsala Conflict Data Program (UCDP).</p>
+					<div class="data-lists">
+						<p class="data-have">🟢 <strong>We Have:</strong> Conflict spans (years), combatants lists, region, total casualties, and global century timelines of active wars since 1920.</p>
+						<p class="data-missing">🔴 <strong>We Miss:</strong> Day-by-day battlefield coordinates, troop movements, and localized conflicts below 1,000 casualties.</p>
+					</div>
+					<p class="modeling-desc"><strong>Modeling Gaps (Battle Indices):</strong> Progression timelines are simulated using a sinusoidal bell curve peaking at the conflict's mid-point:
+						<code class="math">Intensity = 40 + 50 * sin(p * π) + Noise</code>.
 					</p>
-					<p><strong>Global Timeline:</strong> Real active conflict counts and estimated annual casualties aggregated from historical database records.</p>
 				</section>
 
 				<div class="scientific-disclaimer">
-					<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata (war spans, total casualties, earthquake coordinates, climate station logs) represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. battle intensity index, daily aftershock counts) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
+					<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. local battle intensity index, daily aftershock counts, pre-1970 weather records) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
 				</div>
 			</div>
 		</div>
@@ -666,5 +680,36 @@
 		font-size: 0.725rem;
 		color: #ef4444;
 		line-height: 1.4;
+	}
+
+	.modal-intro {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		line-height: 1.45;
+		margin-bottom: 0.5rem;
+	}
+
+	.data-lists {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		background: var(--bg-canvas);
+		padding: 0.6rem 0.8rem;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--border-color);
+		margin: 0.25rem 0;
+	}
+
+	.data-have, .data-missing {
+		margin: 0 !important;
+		font-size: 0.725rem !important;
+		line-height: 1.35 !important;
+	}
+
+	.modeling-desc {
+		font-size: 0.725rem !important;
+		line-height: 1.4 !important;
+		color: var(--text-secondary);
+		margin-top: 0.25rem;
 	}
 </style>
