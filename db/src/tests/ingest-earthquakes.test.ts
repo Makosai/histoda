@@ -8,6 +8,9 @@ test('Earthquake Ingest - Seeding Famous Events and Ingesting API Responses', as
   const insertLogs: { table: string; values: any[] }[] = [];
   const fetchUrls: string[] = [];
 
+  // Mock ClickHouse exec
+  t.mock.method(client, 'exec', async () => {});
+
   // Mock ClickHouse queries
   t.mock.method(client, 'query', async ({ query }: { query: string }) => {
     queryLogs.push(query.trim());

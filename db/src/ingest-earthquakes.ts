@@ -27,25 +27,112 @@ const famousSeeds = [
   { event_id: 'san_francisco', name: 'San Francisco Earthquake', country: 'United States', timestamp: '1906-04-18 13:12:00', latitude: 37.75, longitude: -122.55, magnitude: 7.9, depth: 8, tsunami: 0, casualties: 3000, description: 'One of the most significant earthquakes of all time, destroying over 80% of San Francisco.' }
 ];
 
+// Generate realistic aftershocks sequence using Omori's Law & Gutenberg-Richter distribution
+function generateAftershocks(parentEventId: string, mainMagnitude: number, mainTimestampStr: string, mainLat: number, mainLon: number): any[] {
+  const mainTime = new Date(mainTimestampStr.replace(' ', 'T') + 'Z');
+  const aftershocks = [];
+  const numAftershocks = Math.floor(15 * Math.pow(1.5, mainMagnitude - 5.0)); 
+  
+  for (let i = 0; i < numAftershocks; i++) {
+    const c = 0.1;
+    const maxT = 30;
+    const r = Math.random();
+    const tDays = c * (Math.exp(r * Math.log((maxT + c) / c)) - 1);
+    const tMs = tDays * 24 * 60 * 60 * 1000;
+    
+    const timestamp = new Date(mainTime.getTime() + tMs);
+    const formattedTimestamp = timestamp.toISOString().replace('T', ' ').substring(0, 19);
+
+    const minMag = 3.0;
+    const maxMag = Math.max(3.5, mainMagnitude - 1.0);
+    const mag = minMag + (-Math.log10(1 - Math.random() * (1 - Math.pow(10, -(maxMag - minMag))))) / 1.0;
+
+    const rRad = (1.0 - Math.random()) * (mainMagnitude - 5.0) * 0.1; 
+    const angle = Math.random() * 2 * Math.PI;
+    const latOffset = rRad * Math.sin(angle);
+    const lonOffset = rRad * Math.cos(angle);
+    const depthOffset = (Math.random() - 0.5) * 15; 
+
+    aftershocks.push({
+      aftershock_id: `${parentEventId}_as_${i}`,
+      parent_event_id: parentEventId,
+      timestamp: formattedTimestamp,
+      latitude: parseFloat((mainLat + latOffset).toFixed(3)),
+      longitude: parseFloat((mainLon + lonOffset).toFixed(3)),
+      magnitude: parseFloat(mag.toFixed(1)),
+      depth: parseFloat(Math.max(5.0, 33 + depthOffset).toFixed(1))
+    });
+  }
+  return aftershocks;
+}
+
 async function run() {
   console.log('[Ingest: Earthquakes] Starting earthquakes ingestion...');
   
   try {
-    // 1. Seed famous historical earthquakes if not present
+    // Drop and recreate tables to apply ReplacingMergeTree schema
+    console.log('[Ingest: Earthquakes] Recreating earthquake tables to apply ReplacingMergeTree schema...');
+    await client.exec({ query: 'DROP TABLE IF EXISTS earthquake_aftershocks' });
+    await client.exec({ query: 'DROP TABLE IF EXISTS earthquake_events' });
+
+    await client.exec({
+      query: `
+        CREATE TABLE IF NOT EXISTS earthquake_events (
+            event_id String,
+            name String,
+            country LowCardinality(String),
+            timestamp DateTime,
+            latitude Float32,
+            longitude Float32,
+            magnitude Float32,
+            depth Float32,
+            tsunami UInt8,
+            casualties UInt32,
+            description String
+        ) ENGINE = ReplacingMergeTree()
+        PRIMARY KEY (event_id)
+        ORDER BY (event_id);
+      `
+    });
+
+    await client.exec({
+      query: `
+        CREATE TABLE IF NOT EXISTS earthquake_aftershocks (
+            aftershock_id String,
+            parent_event_id String,
+            timestamp DateTime,
+            latitude Float32,
+            longitude Float32,
+            magnitude Float32,
+            depth Float32
+        ) ENGINE = ReplacingMergeTree()
+        ORDER BY (parent_event_id, timestamp, aftershock_id);
+      `
+    });
+
+    // 1. Seed famous historical earthquakes and their aftershocks
     for (const seed of famousSeeds) {
-      const existCheck = await client.query({
-        query: `SELECT event_id FROM earthquake_events WHERE event_id = '${seed.event_id}'`,
+      console.log(`[Ingest: Earthquakes] Seeding famous event: ${seed.name}`);
+      await client.insert({
+        table: 'earthquake_events',
+        values: [seed],
         format: 'JSONEachRow'
       });
-      const rows = await existCheck.json();
-      if (rows.length === 0) {
-        console.log(`[Ingest: Earthquakes] Seeding famous event: ${seed.name}`);
-        await client.insert({
-          table: 'earthquake_events',
-          values: [seed],
-          format: 'JSONEachRow'
-        });
-      }
+
+      const aftershocks = generateAftershocks(
+        seed.event_id,
+        seed.magnitude,
+        seed.timestamp,
+        seed.latitude,
+        seed.longitude
+      );
+
+      console.log(`[Ingest: Earthquakes] Seeding ${aftershocks.length} aftershocks for ${seed.name}...`);
+      await client.insert({
+        table: 'earthquake_aftershocks',
+        values: aftershocks,
+        format: 'JSONEachRow'
+      });
     }
 
     // 2. Determine latest timestamp for incremental update

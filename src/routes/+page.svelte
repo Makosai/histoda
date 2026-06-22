@@ -34,6 +34,7 @@
 	let selectedMonth = $state<number>(0);
 	
 	let earthquakeViewMode = $state<'event' | 'global'>('event');
+	let earthquakeSubMode = $state<'decay' | 'trend'>('decay');
 	let conflictViewMode = $state<'event' | 'global'>('event');
 	
 	// Chart state and local caching
@@ -110,7 +111,7 @@
 	// Fetch earthquake dataset
 	async function loadEarthquakeData() {
 		if (!selectedEarthquake) return;
-		const cacheKey = `${selectedEarthquake.id}_${earthquakeViewMode}`;
+		const cacheKey = `${selectedEarthquake.id}_${earthquakeViewMode}_${earthquakeSubMode}`;
 		if (earthquakeCache.has(cacheKey)) {
 			const cached = earthquakeCache.get(cacheKey)!;
 			rawEarthquakeData = cached.data;
@@ -119,7 +120,7 @@
 		}
 		isLoading = true;
 		try {
-			const res = await fetch(`/api/earthquakes?event_id=${selectedEarthquake.id}&view=${earthquakeViewMode}`);
+			const res = await fetch(`/api/earthquakes?event_id=${selectedEarthquake.id}&view=${earthquakeViewMode}&subtype=${earthquakeSubMode}`);
 			const json = await res.json();
 			const data = json.data || [];
 			const source = json.source || 'mock';
@@ -170,6 +171,7 @@
 		} else if (activeDomain === 'earthquakes' && selectedEarthquake) {
 			const _eventId = selectedEarthquake.id;
 			const _eqView = earthquakeViewMode;
+			const _subMode = earthquakeSubMode;
 			loadEarthquakeData();
 		} else if (activeDomain === 'conflicts' && selectedConflict) {
 			const _conflictId = selectedConflict.id;
@@ -345,6 +347,7 @@
 				bind:selectedSeason
 				bind:selectedMonth
 				bind:earthquakeViewMode
+				bind:earthquakeSubMode
 				bind:conflictViewMode
 				{selectedEarthquake}
 				{selectedConflict}

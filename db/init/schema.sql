@@ -36,9 +36,21 @@ CREATE TABLE IF NOT EXISTS earthquake_events (
     tsunami UInt8,
     casualties UInt32,
     description String
-) ENGINE = MergeTree()
-PARTITION BY toYear(timestamp)
-ORDER BY (magnitude, timestamp);
+) ENGINE = ReplacingMergeTree()
+PRIMARY KEY (event_id)
+ORDER BY (event_id);
+
+-- Initialize schema for earthquake aftershocks
+CREATE TABLE IF NOT EXISTS earthquake_aftershocks (
+    aftershock_id String,
+    parent_event_id String,
+    timestamp DateTime,
+    latitude Float32,
+    longitude Float32,
+    magnitude Float32,
+    depth Float32
+) ENGINE = ReplacingMergeTree()
+ORDER BY (parent_event_id, timestamp, aftershock_id);
 
 -- Initialize schema for historical wars and conflicts
 CREATE TABLE IF NOT EXISTS historical_conflicts (

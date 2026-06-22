@@ -15,6 +15,7 @@
 		selectedSeason: string;
 		selectedMonth: number;
 		earthquakeViewMode: 'event' | 'global';
+		earthquakeSubMode: 'decay' | 'trend';
 		conflictViewMode: 'event' | 'global';
 		dataSource?: 'clickhouse' | 'mock' | 'loading';
 	}
@@ -32,6 +33,7 @@
 		selectedSeason = $bindable('all'),
 		selectedMonth = $bindable(0),
 		earthquakeViewMode = $bindable('event'),
+		earthquakeSubMode = $bindable('decay'),
 		conflictViewMode = $bindable('event'),
 		dataSource = 'clickhouse'
 	}: Props = $props();
@@ -48,6 +50,7 @@
 		const _season = selectedSeason;
 		const _month = selectedMonth;
 		const _eqView = earthquakeViewMode;
+		const _eqSub = earthquakeSubMode;
 		const _conflictView = conflictViewMode;
 
 		if (chartInstance) {
@@ -358,8 +361,15 @@
 			const frequencies = chartData.map((d) => d.frequency);
 
 			const isGlobal = earthquakeViewMode === 'global';
-			const magSeriesName = isGlobal ? 'Max Magnitude' : 'Peak Magnitude';
-			const freqSeriesName = isGlobal ? 'Total Earthquakes (M6+)' : 'Activity Count (M4+)';
+			const isDecay = !isGlobal && earthquakeSubMode === 'decay';
+
+			const magSeriesName = isDecay 
+				? 'Max Magnitude' 
+				: (isGlobal ? 'Max Magnitude' : 'Peak Magnitude');
+			
+			const freqSeriesName = isDecay 
+				? 'Daily Aftershocks' 
+				: (isGlobal ? 'Total Earthquakes (M6+)' : 'Activity Count (M4+)');
 
 			option = {
 				tooltip: {
@@ -369,9 +379,10 @@
 					borderWidth: 1,
 					textStyle: { color: '#18181b', fontFamily: 'Outfit' },
 					formatter: function (params: any) {
-						let year = params[0].name;
+						let name = params[0].name;
+						let title = isDecay ? name : `Year ${name}`;
 						let html = `<div style="padding: 4px 8px; font-family: Outfit;">
-							<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">Year ${year}</div>`;
+							<div style="font-weight: 600; margin-bottom: 6px; border-bottom: 1px solid #f4f4f5; padding-bottom: 4px;">${title}</div>`;
 						params.forEach((param: any) => {
 							const suffix = param.seriesName.includes('Magnitude') ? ' Mw' : ' events';
 							html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 13px;">
@@ -391,8 +402,8 @@
 				grid: { left: '4%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
 				xAxis: {
 					type: 'category',
-					boundaryGap: false,
-					data: years,
+					boundaryGap: isDecay ? true : false,
+					data: isDecay ? years.map((y) => `Day ${y}`) : years,
 					axisLine: { lineStyle: { color: '#e4e4e7' } },
 					axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
 				},
@@ -408,7 +419,7 @@
 					},
 					{
 						type: 'value',
-						name: 'Events / Year',
+						name: isDecay ? 'Aftershocks / Day' : 'Events / Year',
 						nameTextStyle: { fontFamily: 'Outfit', color: '#71717a' },
 						splitLine: { show: false },
 						axisLabel: { fontFamily: 'Outfit', color: '#71717a' }
@@ -430,9 +441,9 @@
 						type: 'bar',
 						yAxisIndex: 1,
 						data: frequencies,
-						barWidth: isGlobal ? '60%' : '40%',
+						barWidth: isDecay ? '60%' : (isGlobal ? '60%' : '40%'),
 						itemStyle: {
-							color: isGlobal ? 'rgba(239, 68, 68, 0.15)' : 'rgba(113, 113, 122, 0.2)',
+							color: isDecay ? 'rgba(239, 68, 68, 0.25)' : (isGlobal ? 'rgba(239, 68, 68, 0.15)' : 'rgba(113, 113, 122, 0.2)'),
 							borderRadius: [4, 4, 0, 0]
 						}
 					}
@@ -667,7 +678,11 @@
 				{#if earthquakeViewMode === 'global'}
 					Global Seismic Activity & Magnitudes (1880 - 2026)
 				{:else}
-					Local Seismic Activity Timeline
+				{#if earthquakeSubMode === 'decay'}
+					30-Day Aftershock Decay Timeline
+				{:else}
+					30-Year Local Seismic Trend
+				{/if}
 				{/if}
 			{:else if activeDomain === 'conflicts'}
 				{#if conflictViewMode === 'global'}
@@ -780,6 +795,24 @@
 						Global Trends (140Y)
 					</button>
 				</div>
+				{#if earthquakeViewMode === 'event'}
+					<div class="view-toggle">
+						<button 
+							class="toggle-btn" 
+							class:active={earthquakeSubMode === 'decay'} 
+							onclick={() => { earthquakeSubMode = 'decay'; }}
+						>
+							30-Day Decay
+						</button>
+						<button 
+							class="toggle-btn" 
+							class:active={earthquakeSubMode === 'trend'} 
+							onclick={() => { earthquakeSubMode = 'trend'; }}
+						>
+							30-Year Trend
+						</button>
+					</div>
+				{/if}
 			</div>
 		{:else if activeDomain === 'conflicts'}
 			<div class="climate-controls">
@@ -830,9 +863,21 @@
 					ℹ️ Yearly battle intensity and count are mathematically simulated inside the conflict's span.
 				</span>
 			{:else if activeDomain === 'earthquakes' && earthquakeViewMode === 'event'}
-				<span class="notice">
-					ℹ️ Local seismic frequency and aftershock decay are modeled around the event window.
-				</span>
+				{#if earthquakeSubMode === 'decay'}
+					{#if dataSource === 'clickhouse'}
+						<span class="notice">
+							ℹ️ Aftershock sequence compiled from static USGS ANSS ComCat catalog records.
+						</span>
+					{:else}
+						<span class="notice">
+							ℹ️ Aftershock sequence mathematically modeled using Omori's Law and Gutenberg-Richter equations.
+						</span>
+					{/if}
+				{:else}
+					<span class="notice">
+						ℹ️ Local country-wide seismic timeline displays M4.0+ events.
+					</span>
+				{/if}
 			{/if}
 		</div>
 	</div>
