@@ -16,6 +16,7 @@
 		selectedMonth: number;
 		earthquakeViewMode: 'event' | 'global';
 		conflictViewMode: 'event' | 'global';
+		dataSource?: 'clickhouse' | 'mock' | 'loading';
 	}
 
 	let {
@@ -31,7 +32,8 @@
 		selectedSeason = $bindable('all'),
 		selectedMonth = $bindable(0),
 		earthquakeViewMode = $bindable('event'),
-		conflictViewMode = $bindable('event')
+		conflictViewMode = $bindable('event'),
+		dataSource = 'clickhouse'
 	}: Props = $props();
 
 	let chartDom: HTMLElement | null = $state(null);
@@ -810,6 +812,30 @@
 		{/if}
 		<div bind:this={chartDom} class="echarts-container"></div>
 	</div>
+	
+	<div class="chart-footer">
+		<div class="source-indicator">
+			{#if dataSource === 'clickhouse'}
+				<span class="badge clickhouse">
+					<span class="dot green"></span> Live ClickHouse Database
+				</span>
+			{:else if dataSource === 'mock'}
+				<span class="badge mock">
+					<span class="dot yellow"></span> Offline Fallback (Mock Data)
+				</span>
+			{/if}
+
+			{#if activeDomain === 'conflicts' && conflictViewMode === 'event'}
+				<span class="notice">
+					ℹ️ Yearly battle intensity and count are mathematically simulated inside the conflict's span.
+				</span>
+			{:else if activeDomain === 'earthquakes' && earthquakeViewMode === 'event'}
+				<span class="notice">
+					ℹ️ Local seismic frequency and aftershock decay are modeled around the event window.
+				</span>
+			{/if}
+		</div>
+	</div>
 </div>
 
 <style>
@@ -953,5 +979,62 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--text-secondary);
+	}
+
+	.chart-footer {
+		border-top: 1px solid var(--border-color);
+		padding-top: 0.75rem;
+		margin-top: -0.25rem;
+	}
+
+	.source-indicator {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-md);
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	.badge.clickhouse {
+		background: rgba(34, 197, 94, 0.1);
+		color: #22c55e;
+	}
+
+	.badge.mock {
+		background: rgba(234, 179, 8, 0.1);
+		color: #eab308;
+	}
+
+	.dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+	}
+
+	.dot.green {
+		background-color: #22c55e;
+	}
+
+	.dot.yellow {
+		background-color: #eab308;
+	}
+
+	.notice {
+		color: var(--text-secondary);
+		font-size: 0.7rem;
+		font-style: italic;
+		font-weight: 500;
 	}
 </style>

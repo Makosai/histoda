@@ -63,17 +63,31 @@
 		return [];
 	});
 
-	// Client-side caches to prevent duplicate network requests
-	const climateCache = new Map<string, any[]>();
-	const earthquakeCache = new Map<string, any[]>();
-	const conflictCache = new Map<string, any[]>();
+	// DataSource tracker runes
+	let weatherDataSource = $state<'clickhouse' | 'mock' | 'loading'>('loading');
+	let earthquakeDataSource = $state<'clickhouse' | 'mock' | 'loading'>('loading');
+	let conflictDataSource = $state<'clickhouse' | 'mock' | 'loading'>('loading');
+
+	let currentDataSource = $derived.by(() => {
+		if (activeDomain === 'climate') return weatherDataSource;
+		if (activeDomain === 'earthquakes') return earthquakeDataSource;
+		if (activeDomain === 'conflicts') return conflictDataSource;
+		return 'loading';
+	});
+
+	// Client-side caches to prevent duplicate network requests (maps keys to { data, source })
+	const climateCache = new Map<string, { data: any[]; source: 'clickhouse' | 'mock' }>();
+	const earthquakeCache = new Map<string, { data: any[]; source: 'clickhouse' | 'mock' }>();
+	const conflictCache = new Map<string, { data: any[]; source: 'clickhouse' | 'mock' }>();
 
 	// Fetch weather dataset only when the selected station, active domain, or view changes
 	async function loadClimateData() {
 		if (!selectedStation) return;
 		const cacheKey = `${selectedStation.id}_${viewMode}`;
 		if (climateCache.has(cacheKey)) {
-			rawWeatherData = climateCache.get(cacheKey)!;
+			const cached = climateCache.get(cacheKey)!;
+			rawWeatherData = cached.data;
+			weatherDataSource = cached.source;
 			return;
 		}
 		isLoading = true;
@@ -81,10 +95,13 @@
 			const res = await fetch(`/api/temperatures?station_id=${selectedStation.id}&view=${viewMode}`);
 			const json = await res.json();
 			const data = json.data || [];
-			climateCache.set(cacheKey, data);
+			const source = json.source || (data.length > 0 && data[0].diagnostics ? 'mock' : 'clickhouse');
+			climateCache.set(cacheKey, { data, source });
 			rawWeatherData = data;
+			weatherDataSource = source;
 		} catch (e) {
 			console.error('Failed to load climate dataset timeline', e);
+			weatherDataSource = 'mock';
 		} finally {
 			isLoading = false;
 		}
@@ -95,7 +112,9 @@
 		if (!selectedEarthquake) return;
 		const cacheKey = `${selectedEarthquake.id}_${earthquakeViewMode}`;
 		if (earthquakeCache.has(cacheKey)) {
-			rawEarthquakeData = earthquakeCache.get(cacheKey)!;
+			const cached = earthquakeCache.get(cacheKey)!;
+			rawEarthquakeData = cached.data;
+			earthquakeDataSource = cached.source;
 			return;
 		}
 		isLoading = true;
@@ -103,10 +122,13 @@
 			const res = await fetch(`/api/earthquakes?event_id=${selectedEarthquake.id}&view=${earthquakeViewMode}`);
 			const json = await res.json();
 			const data = json.data || [];
-			earthquakeCache.set(cacheKey, data);
+			const source = json.source || 'mock';
+			earthquakeCache.set(cacheKey, { data, source });
 			rawEarthquakeData = data;
+			earthquakeDataSource = source;
 		} catch (e) {
 			console.error('Failed to load earthquake dataset timeline', e);
+			earthquakeDataSource = 'mock';
 		} finally {
 			isLoading = false;
 		}
@@ -117,7 +139,9 @@
 		if (!selectedConflict) return;
 		const cacheKey = `${selectedConflict.id}_${conflictViewMode}`;
 		if (conflictCache.has(cacheKey)) {
-			rawConflictData = conflictCache.get(cacheKey)!;
+			const cached = conflictCache.get(cacheKey)!;
+			rawConflictData = cached.data;
+			conflictDataSource = cached.source;
 			return;
 		}
 		isLoading = true;
@@ -125,10 +149,13 @@
 			const res = await fetch(`/api/conflicts?conflict_id=${selectedConflict.id}&view=${conflictViewMode}`);
 			const json = await res.json();
 			const data = json.data || [];
-			conflictCache.set(cacheKey, data);
+			const source = json.source || 'mock';
+			conflictCache.set(cacheKey, { data, source });
 			rawConflictData = data;
+			conflictDataSource = source;
 		} catch (e) {
 			console.error('Failed to load conflict dataset timeline', e);
+			conflictDataSource = 'mock';
 		} finally {
 			isLoading = false;
 		}
@@ -308,6 +335,7 @@
 			<!-- Visual ECharts Chart Component -->
 			<HistoricalChart 
 				{activeDomain}
+				dataSource={currentDataSource}
 				{chartData}
 				{isLoading}
 				{isCelsius}
