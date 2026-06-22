@@ -14,6 +14,8 @@
 		viewMode: 'annual' | 'seasonal' | 'monthly';
 		selectedSeason: string;
 		selectedMonth: number;
+		earthquakeViewMode: 'event' | 'global';
+		conflictViewMode: 'event' | 'global';
 	}
 
 	let {
@@ -27,7 +29,9 @@
 		selectedConflict,
 		viewMode = $bindable('annual'),
 		selectedSeason = $bindable('all'),
-		selectedMonth = $bindable(0)
+		selectedMonth = $bindable(0),
+		earthquakeViewMode = $bindable('event'),
+		conflictViewMode = $bindable('event')
 	}: Props = $props();
 
 	let chartDom: HTMLElement | null = $state(null);

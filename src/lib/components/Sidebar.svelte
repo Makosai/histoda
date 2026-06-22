@@ -1,27 +1,34 @@
 <script lang="ts">
 	import type { Station, Earthquake, Conflict } from '$lib/mockData';
-	import { earthquakes, conflicts } from '$lib/mockData';
 
 	interface Props {
 		activeDomain: 'climate' | 'earthquakes' | 'conflicts';
 		stations: Station[];
+		earthquakes: Earthquake[];
+		conflicts: Conflict[];
 		isCelsius: boolean;
 		searchQuery: string;
 		selectedStation: Station;
 		selectedEarthquake: Earthquake;
 		selectedConflict: Conflict;
 		bookmarks: string[];
+		earthquakeViewMode: 'event' | 'global';
+		conflictViewMode: 'event' | 'global';
 	}
 
 	let {
 		activeDomain,
 		stations,
+		earthquakes,
+		conflicts,
 		isCelsius = $bindable(),
 		searchQuery = $bindable(),
 		selectedStation = $bindable(),
 		selectedEarthquake = $bindable(),
 		selectedConflict = $bindable(),
-		bookmarks = $bindable()
+		bookmarks = $bindable(),
+		earthquakeViewMode,
+		conflictViewMode
 	}: Props = $props();
 
 	// Local state
@@ -225,61 +232,85 @@
 					</div>
 				{/if}
 			{:else if activeDomain === 'earthquakes'}
-				{#each filteredEarthquakes as eq}
-					<button 
-						class="station-card" 
-						class:active={selectedEarthquake.id === eq.id}
-						onclick={() => selectedEarthquake = eq}
-					>
-						<div class="item-header">
-							<span class="item-title">{eq.name}</span>
-							{#if bookmarks.includes(`earthquakes:${eq.id}`)}
-								<span class="star-badge">★</span>
-							{/if}
+				{#if earthquakeViewMode === 'global'}
+					<div class="global-view-banner animate-fade-in">
+						<span class="banner-icon">🌐</span>
+						<div class="banner-text">
+							<h5>Global Trends Active</h5>
+							<p>Displaying data for 2.9M+ earthquakes. Individual selection is disabled.</p>
 						</div>
-						<div class="item-meta">
-							<span>Mag {eq.magnitude} Mw</span>
-							<span class="dot">•</span>
-							<span>{eq.year}</span>
-						</div>
-					</button>
-				{/each}
-				{#if filteredEarthquakes.length === 0}
-					<div class="empty-state">
-						<p>No earthquakes found.</p>
-						{#if showBookmarksOnly}
-							<p class="empty-hint">Try bookmarking some earthquakes first!</p>
-						{/if}
 					</div>
 				{/if}
+				<div class="list-wrapper-container" class:disabled-view={earthquakeViewMode === 'global'}>
+					{#each filteredEarthquakes as eq}
+						<button 
+							class="station-card" 
+							class:active={selectedEarthquake.id === eq.id}
+							onclick={() => { if (earthquakeViewMode !== 'global') selectedEarthquake = eq; }}
+							disabled={earthquakeViewMode === 'global'}
+						>
+							<div class="item-header">
+								<span class="item-title">{eq.name}</span>
+								{#if bookmarks.includes(`earthquakes:${eq.id}`)}
+									<span class="star-badge">★</span>
+								{/if}
+							</div>
+							<div class="item-meta">
+								<span>Mag {eq.magnitude} Mw</span>
+								<span class="dot">•</span>
+								<span>{eq.year}</span>
+							</div>
+						</button>
+					{/each}
+					{#if filteredEarthquakes.length === 0}
+						<div class="empty-state">
+							<p>No earthquakes found.</p>
+							{#if showBookmarksOnly}
+								<p class="empty-hint">Try bookmarking some earthquakes first!</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
 			{:else if activeDomain === 'conflicts'}
-				{#each filteredConflicts as conflict}
-					<button 
-						class="station-card" 
-						class:active={selectedConflict.id === conflict.id}
-						onclick={() => selectedConflict = conflict}
-					>
-						<div class="item-header">
-							<span class="item-title">{conflict.name}</span>
-							{#if bookmarks.includes(`conflicts:${conflict.id}`)}
-								<span class="star-badge">★</span>
-							{/if}
+				{#if conflictViewMode === 'global'}
+					<div class="global-view-banner animate-fade-in">
+						<span class="banner-icon">⚔️</span>
+						<div class="banner-text">
+							<h5>Century Timeline Active</h5>
+							<p>Displaying active wars and casualty rates. Individual selection is disabled.</p>
 						</div>
-						<div class="item-meta">
-							<span>{conflict.region}</span>
-							<span class="dot">•</span>
-							<span>{conflict.startYear}–{conflict.endYear}</span>
-						</div>
-					</button>
-				{/each}
-				{#if filteredConflicts.length === 0}
-					<div class="empty-state">
-						<p>No conflicts found.</p>
-						{#if showBookmarksOnly}
-							<p class="empty-hint">Try bookmarking some conflicts first!</p>
-						{/if}
 					</div>
 				{/if}
+				<div class="list-wrapper-container" class:disabled-view={conflictViewMode === 'global'}>
+					{#each filteredConflicts as conflict}
+						<button 
+							class="station-card" 
+							class:active={selectedConflict.id === conflict.id}
+							onclick={() => { if (conflictViewMode !== 'global') selectedConflict = conflict; }}
+							disabled={conflictViewMode === 'global'}
+						>
+							<div class="item-header">
+								<span class="item-title">{conflict.name}</span>
+								{#if bookmarks.includes(`conflicts:${conflict.id}`)}
+									<span class="star-badge">★</span>
+								{/if}
+							</div>
+							<div class="item-meta">
+								<span>{conflict.region}</span>
+								<span class="dot">•</span>
+								<span>{conflict.startYear}–{conflict.endYear}</span>
+							</div>
+						</button>
+					{/each}
+					{#if filteredConflicts.length === 0}
+						<div class="empty-state">
+							<p>No conflicts found.</p>
+							{#if showBookmarksOnly}
+								<p class="empty-hint">Try bookmarking some conflicts first!</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
 			{/if}
 		</div>
 
@@ -497,6 +528,52 @@
 	.empty-hint {
 		font-size: 0.75rem !important;
 		color: var(--text-muted);
+	}
+
+	/* Global View Active Banner */
+	.global-view-banner {
+		background: var(--color-accent-soft);
+		border: 1px solid var(--color-accent-border);
+		border-radius: var(--radius-md);
+		padding: 0.75rem;
+		display: flex;
+		gap: 0.6rem;
+		align-items: flex-start;
+		margin-bottom: 0.75rem;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.banner-icon {
+		font-size: 1.1rem;
+		line-height: 1.15;
+	}
+
+	.banner-text h5 {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--color-accent);
+		margin: 0 0 0.15rem 0;
+	}
+
+	.banner-text p {
+		font-size: 0.7rem;
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.35;
+	}
+
+	.list-wrapper-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		transition: all 0.2s ease;
+	}
+
+	.list-wrapper-container.disabled-view {
+		opacity: 0.4;
+		pointer-events: none;
+		user-select: none;
+		filter: grayscale(80%);
 	}
 
 	/* Selection list header */

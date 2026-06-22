@@ -1,32 +1,14 @@
 import type { PageServerLoad } from './$types';
 import { clickhouse, testConnection } from '$lib/server/clickhouse';
-
-interface Station {
-	id: string;
-	name: string;
-	country: string;
-	latitude: number;
-	longitude: number;
-	elevation: number;
-	period: string;
-}
-
-const defaultStations: Station[] = [
-	{ id: 'paris', name: 'Paris Charles de Gaulle', country: 'France', latitude: 49.0097, longitude: 2.5479, elevation: 119, period: '1880 - 2026' },
-	{ id: 'tampa', name: 'Tampa International', country: 'United States', latitude: 27.9506, longitude: -82.4572, elevation: 8, period: '1880 - 2026' },
-	{ id: 'new_york', name: 'New York Central Park', country: 'United States', latitude: 40.7829, longitude: -73.9654, elevation: 40, period: '1880 - 2026' },
-	{ id: 'toronto', name: 'Toronto Pearson International', country: 'Canada', latitude: 43.6777, longitude: -79.6248, elevation: 173, period: '1880 - 2026' },
-	{ id: 'lagos', name: 'Lagos International', country: 'Nigeria', latitude: 6.5774, longitude: 3.3212, elevation: 40, period: '1880 - 2026' },
-	{ id: 'london', name: 'London Heathrow', country: 'United Kingdom', latitude: 51.4776, longitude: -0.4614, elevation: 25, period: '1880 - 2026' },
-	{ id: 'tokyo', name: 'Tokyo International', country: 'Japan', latitude: 35.5533, longitude: 139.7811, elevation: 6, period: '1880 - 2026' },
-	{ id: 'cairo', name: 'Cairo International', country: 'Egypt', latitude: 30.1219, longitude: 31.4056, elevation: 74, period: '1880 - 2026' },
-	{ id: 'sydney', name: 'Sydney Observatory Hill', country: 'Australia', latitude: -33.8598, longitude: 151.2052, elevation: 39, period: '1880 - 2026' }
-];
+import { defaultStations, earthquakes as defaultEarthquakes, conflicts as defaultConflicts } from '$lib/mockData';
 
 export const load: PageServerLoad = async () => {
 	const isDbAvailable = await testConnection();
 
 	let stations = defaultStations;
+	let earthquakes = defaultEarthquakes;
+	let conflicts = defaultConflicts;
+
 	let stats = {
 		globalAnomaly: 1.26,
 		reportingStations: 12452,
@@ -36,7 +18,7 @@ export const load: PageServerLoad = async () => {
 
 	if (isDbAvailable) {
 		try {
-			// Query weather stations from ClickHouse if configured
+			// 1. Query weather stations from ClickHouse
 			const stationResult = await clickhouse.query({
 				query: `
 					SELECT 
@@ -63,7 +45,65 @@ export const load: PageServerLoad = async () => {
 				stations = dbStations;
 			}
 
-			// Query general stats if records table has content
+			// 2. Query earthquakes from ClickHouse
+			const eqResult = await clickhouse.query({
+				query: `
+					SELECT 
+						event_id AS id,
+						name,
+						country,
+						toYear(timestamp) AS year,
+						magnitude,
+						depth,
+						tsunami,
+						casualties,
+						description
+					FROM earthquake_events
+					LIMIT 200
+				`,
+				format: 'JSONEachRow'
+			});
+			const dbEarthquakes = await eqResult.json() as any[];
+			if (dbEarthquakes.length > 0) {
+				const orderMap = new Map(defaultEarthquakes.map((e, index) => [e.id, index]));
+				dbEarthquakes.sort((a, b) => {
+					const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : Infinity;
+					const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : Infinity;
+					return indexA - indexB;
+				});
+				earthquakes = dbEarthquakes;
+			}
+
+			// 3. Query historical conflicts from ClickHouse
+			const conflictsResult = await clickhouse.query({
+				query: `
+					SELECT 
+						conflict_id AS id,
+						name,
+						region,
+						start_year AS startYear,
+						end_year AS endYear,
+						combatants,
+						casualties,
+						duration,
+						description
+					FROM historical_conflicts
+					LIMIT 100
+				`,
+				format: 'JSONEachRow'
+			});
+			const dbConflicts = await conflictsResult.json() as any[];
+			if (dbConflicts.length > 0) {
+				const orderMap = new Map(defaultConflicts.map((c, index) => [c.id, index]));
+				dbConflicts.sort((a, b) => {
+					const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : Infinity;
+					const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : Infinity;
+					return indexA - indexB;
+				});
+				conflicts = dbConflicts;
+			}
+
+			// 4. Query general stats if weather records exist
 			const statsResult = await clickhouse.query({
 				query: `
 					SELECT 
@@ -76,7 +116,7 @@ export const load: PageServerLoad = async () => {
 			const dbStats = await statsResult.json() as any[];
 			if (dbStats.length > 0 && dbStats[0].total_stations > 0) {
 				stats.reportingStations = Number(dbStats[0].total_stations);
-				stats.hottestYear = Number(dbStats[0].max_year) - 3; // Approx calculation
+				stats.hottestYear = Number(dbStats[0].max_year) - 3;
 			}
 		} catch (error) {
 			console.error('[ClickHouse] Error loading layout server data:', error);
@@ -86,6 +126,8 @@ export const load: PageServerLoad = async () => {
 	return {
 		isDbAvailable,
 		stations,
+		earthquakes,
+		conflicts,
 		stats
 	};
 };

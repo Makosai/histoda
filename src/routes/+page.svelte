@@ -22,20 +22,26 @@
 
 	// Selections
 	let selectedStation = $state<Station>(data.stations[0]);
-	let selectedEarthquake = $state<Earthquake>(earthquakes[0]);
-	let selectedConflict = $state<Conflict>(conflicts[0]);
+	let selectedEarthquake = $state<Earthquake>(data.earthquakes[0]);
+	let selectedConflict = $state<Conflict>(data.conflicts[0]);
 
 	// Year range filter controls
 	let startYear = $state(1880);
 	let endYear = $state(2026);
 
-	// Climate view controls
+	// Domain view controls
 	let viewMode = $state<'annual' | 'seasonal' | 'monthly'>('annual');
 	let selectedSeason = $state<string>('all');
 	let selectedMonth = $state<number>(0);
 	
+	let earthquakeViewMode = $state<'event' | 'global'>('event');
+	let conflictViewMode = $state<'event' | 'global'>('event');
+	
 	// Chart state and local caching
 	let rawWeatherData = $state<any[]>([]);
+	let rawEarthquakeData = $state<any[]>([]);
+	let rawConflictData = $state<any[]>([]);
+
 	let isLoading = $state(false);
 	let bookmarks = $state<string[]>([]);
 	let hasMounted = $state(false);
@@ -51,9 +57,9 @@
 			}
 			return filtered;
 		} else if (activeDomain === 'earthquakes') {
-			return generateMockSeismic(selectedEarthquake);
+			return rawEarthquakeData;
 		} else if (activeDomain === 'conflicts') {
-			return generateMockConflict(selectedConflict);
+			return rawConflictData;
 		}
 		return [];
 	});
@@ -72,14 +78,48 @@
 		}
 	}
 
-	// Trigger load only when domain, station, or view changes
-	$effect(() => {
-		const _domain = activeDomain;
-		const _stationId = selectedStation.id;
-		const _viewMode = viewMode;
+	// Fetch earthquake dataset
+	async function loadEarthquakeData() {
+		isLoading = true;
+		try {
+			const res = await fetch(`/api/earthquakes?event_id=${selectedEarthquake.id}&view=${earthquakeViewMode}`);
+			const json = await res.json();
+			rawEarthquakeData = json.data || [];
+		} catch (e) {
+			console.error('Failed to load earthquake dataset timeline', e);
+		} finally {
+			isLoading = false;
+		}
+	}
 
+	// Fetch conflict dataset
+	async function loadConflictData() {
+		isLoading = true;
+		try {
+			const res = await fetch(`/api/conflicts?conflict_id=${selectedConflict.id}&view=${conflictViewMode}`);
+			const json = await res.json();
+			rawConflictData = json.data || [];
+		} catch (e) {
+			console.error('Failed to load conflict dataset timeline', e);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Trigger load reactively based on active domain & parameters
+	$effect(() => {
 		if (activeDomain === 'climate') {
+			const _stationId = selectedStation.id;
+			const _viewMode = viewMode;
 			loadClimateData();
+		} else if (activeDomain === 'earthquakes') {
+			const _eventId = selectedEarthquake.id;
+			const _eqView = earthquakeViewMode;
+			loadEarthquakeData();
+		} else if (activeDomain === 'conflicts') {
+			const _conflictId = selectedConflict.id;
+			const _conflictView = conflictViewMode;
+			loadConflictData();
 		}
 	});
 
@@ -183,12 +223,16 @@
 		<Sidebar 
 			{activeDomain}
 			stations={data.stations}
+			earthquakes={data.earthquakes}
+			conflicts={data.conflicts}
 			bind:isCelsius
 			bind:searchQuery
 			bind:selectedStation
 			bind:selectedEarthquake
 			bind:selectedConflict
 			bind:bookmarks
+			{earthquakeViewMode}
+			{conflictViewMode}
 		/>
 
 		<!-- Content Panel -->
@@ -199,16 +243,22 @@
 					{#if activeDomain === 'climate'}
 						<h2>{selectedStation.name}</h2>
 						<p class="subtitle">{selectedStation.country} — Lat: {selectedStation.latitude}° | Long: {selectedStation.longitude}° | Elev: {selectedStation.elevation}m</p>
-					{:else}
-						{@const current = activeDomain === 'earthquakes' ? selectedEarthquake : selectedConflict}
-						<h2>{current.name}</h2>
-						<p class="subtitle">
-							{#if activeDomain === 'earthquakes'}
-								{selectedEarthquake.country} — Year: {selectedEarthquake.year} | Magnitude: {selectedEarthquake.magnitude} Mw | Depth: {selectedEarthquake.depth} km
-							{:else}
-								{selectedConflict.region} — Span: {selectedConflict.startYear} - {selectedConflict.endYear} | Duration: {selectedConflict.duration}
-							{/if}
-						</p>
+					{:else if activeDomain === 'earthquakes'}
+						{#if earthquakeViewMode === 'global'}
+							<h2>Global Seismic Trends</h2>
+							<p class="subtitle">Visualizing 2.9 million earthquakes over the past 140 years (1880 - 2026)</p>
+						{:else}
+							<h2>{selectedEarthquake.name}</h2>
+							<p class="subtitle">{selectedEarthquake.country} — Year: {selectedEarthquake.year} | Magnitude: {selectedEarthquake.magnitude} Mw | Depth: {selectedEarthquake.depth} km</p>
+						{/if}
+					{:else if activeDomain === 'conflicts'}
+						{#if conflictViewMode === 'global'}
+							<h2>Century Conflict Timeline</h2>
+							<p class="subtitle">Visualizing active wars and casualties over the past century (1920 - 2026)</p>
+						{:else}
+							<h2>{selectedConflict.name}</h2>
+							<p class="subtitle">{selectedConflict.region} — Span: {selectedConflict.startYear} - {selectedConflict.endYear} | Duration: {selectedConflict.duration}</p>
+						{/if}
 					{/if}
 				</div>
 				<div class="export-wrap">
@@ -238,6 +288,8 @@
 				bind:viewMode
 				bind:selectedSeason
 				bind:selectedMonth
+				bind:earthquakeViewMode
+				bind:conflictViewMode
 				{selectedEarthquake}
 				{selectedConflict}
 			/>

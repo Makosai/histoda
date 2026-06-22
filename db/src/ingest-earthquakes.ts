@@ -20,6 +20,10 @@ const famousSeeds = [
   { event_id: 'alaska', name: 'Great Alaska Earthquake', country: 'United States', timestamp: '1964-03-27 17:36:12', latitude: 61.02, longitude: -147.65, magnitude: 9.2, depth: 25, tsunami: 1, casualties: 131, description: 'The second largest earthquake in recorded history, causing significant ground fissures and tsunamis.' },
   { event_id: 'sumatra', name: 'Indian Ocean Earthquake', country: 'Indonesia', timestamp: '2004-12-26 00:58:53', latitude: 3.316, longitude: 95.854, magnitude: 9.1, depth: 30, tsunami: 1, casualties: 227898, description: 'Triggered a series of devastating tsunamis along the coasts of most landmasses bordering the Indian Ocean.' },
   { event_id: 'tohoku', name: 'Tohoku Earthquake', country: 'Japan', timestamp: '2011-03-11 05:46:24', latitude: 38.322, longitude: 142.369, magnitude: 9.0, depth: 29, tsunami: 1, casualties: 19759, description: 'A massive undersea megathrust earthquake that triggered a highly destructive tsunami and the Fukushima disaster.' },
+  { event_id: 'tangshan', name: 'Tangshan Earthquake', country: 'China', timestamp: '1976-07-27 19:42:54', latitude: 39.57, longitude: 117.98, magnitude: 7.5, depth: 15, tsunami: 0, casualties: 242769, description: 'One of the deadliest earthquakes in recorded history, decimating the industrial city of Tangshan.' },
+  { event_id: 'sichuan', name: 'Sichuan Earthquake', country: 'China', timestamp: '2008-05-12 06:28:01', latitude: 31.00, longitude: 103.40, magnitude: 7.9, depth: 19, tsunami: 0, casualties: 87587, description: 'Also known as the Great Wenchuan earthquake, causing severe landslides and massive destruction.' },
+  { event_id: 'haiti', name: 'Haiti Earthquake', country: 'Haiti', timestamp: '2010-01-12 21:53:10', latitude: 18.46, longitude: -72.53, magnitude: 7.0, depth: 13, tsunami: 1, casualties: 316000, description: 'A catastrophic earthquake that struck Haiti, leaving hundreds of thousands of casualties and extreme devastation.' },
+  { event_id: 'kobe', name: 'Kobe Earthquake', country: 'Japan', timestamp: '1995-01-16 20:46:52', latitude: 34.57, longitude: 135.03, magnitude: 6.9, depth: 16, tsunami: 0, casualties: 6434, description: 'Also known as the Great Hanshin earthquake, causing massive damage in the city of Kobe.' },
   { event_id: 'san_francisco', name: 'San Francisco Earthquake', country: 'United States', timestamp: '1906-04-18 13:12:00', latitude: 37.75, longitude: -122.55, magnitude: 7.9, depth: 8, tsunami: 0, casualties: 3000, description: 'One of the most significant earthquakes of all time, destroying over 80% of San Francisco.' }
 ];
 
@@ -46,7 +50,7 @@ async function run() {
 
     // 2. Determine latest timestamp for incremental update
     const maxResult = await client.query({
-      query: "SELECT max(timestamp) as max_ts FROM earthquake_events WHERE event_id NOT IN ('valdivia', 'alaska', 'sumatra', 'tohoku', 'san_francisco')",
+      query: "SELECT max(timestamp) as max_ts FROM earthquake_events WHERE event_id NOT IN ('valdivia', 'alaska', 'sumatra', 'tohoku', 'san_francisco', 'tangshan', 'sichuan', 'haiti', 'kobe')",
       format: 'JSONEachRow'
     });
     const maxRows = await maxResult.json() as { max_ts: string }[];
