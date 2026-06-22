@@ -45,6 +45,7 @@
 	let isLoading = $state(false);
 	let bookmarks = $state<string[]>([]);
 	let hasMounted = $state(false);
+	let showMethodology = $state(false);
 
 	// Derived chartData updates reactively in the browser (user CPU)
 	let chartData = $derived.by(() => {
@@ -318,7 +319,10 @@
 						{/if}
 					{/if}
 				</div>
-				<div class="export-wrap">
+				<div class="export-wrap" style="display: flex; gap: 0.5rem;">
+					<button class="action-btn outline" onclick={() => { showMethodology = true; }}>
+						🔬 Methodology
+					</button>
 					<button class="action-btn outline" onclick={exportToCSV}>
 						🗂️ Export CSV
 					</button>
@@ -354,6 +358,49 @@
 			/>
 		</main>
 	</div>
+
+	{#if showMethodology}
+		<div class="modal-backdrop" onclick={() => { showMethodology = false; }}>
+			<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+				<div class="modal-header">
+					<h3>🔬 Scientific Methodology & Data Provenance</h3>
+					<button class="close-btn" onclick={() => { showMethodology = false; }}>&times;</button>
+				</div>
+				<div class="modal-body">
+					<section class="methodology-section">
+						<h4>🌡️ Climate & Temperatures</h4>
+						<p><strong>Primary Source:</strong> NASA GISTEMP (Global Temperature Anomaly) & NOAA Global Historical Climatology Network (GHCN-Daily).</p>
+						<p><strong>Baseline Reference:</strong> Anomalies are computed relative to the 1960–1990 global average temperature (~14.0°C / 57.2°F).</p>
+						<p><strong>Formula:</strong> Anomaly = Local average temperature minus baseline reference temperature.</p>
+					</section>
+
+					<section class="methodology-section">
+						<h4>🌋 Seismic & Earthquakes</h4>
+						<p><strong>Primary Source:</strong> USGS ANSS Comprehensive Earthquake Catalog (ComCat) API.</p>
+						<p><strong>Aftershock Decay:</strong> Modeled using **Omori's Law** for frequency decay:
+							<code class="math">n(t) = k / (c + t)^p</code> (where <em>c = 0.1</em>, <em>p = 1.0</em>, and <em>k</em> scales exponentially with the main shock magnitude).
+						</p>
+						<p><strong>Magnitude Distribution:</strong> Modeled using the **Gutenberg-Richter Law**:
+							<code class="math">log10(N) = a - bM</code> (with <em>b = 1.0</em> for standard seismic size scaling).
+						</p>
+					</section>
+
+					<section class="methodology-section">
+						<h4>⚔️ Wars & Conflicts</h4>
+						<p><strong>Primary Source:</strong> Correlates of War (COW) Project & Uppsala Conflict Data Program (UCDP).</p>
+						<p><strong>Conflict Intensity Curve:</strong> For individual events, battle intensity is modeled over the war's span using a bell-curve (sine wave) peaking at mid-conflict, supplemented with random skirmish noise:
+							<code class="math">Intensity(p) = 40 + 50 * sin(p * &pi;) + CosNoise</code>
+						</p>
+						<p><strong>Global Timeline:</strong> Real active conflict counts and estimated annual casualties aggregated from historical database records.</p>
+					</section>
+
+					<div class="scientific-disclaimer">
+						<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata (war spans, total casualties, earthquake coordinates, climate station logs) represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. battle intensity index, daily aftershock counts) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -481,5 +528,126 @@
 		.domain-switcher {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	/* Scientific Methodology Modal styles conforming to premium glassmorphism theme */
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		backdrop-filter: blur(4px);
+	}
+
+	.modal-content {
+		background: var(--bg-card);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius-lg);
+		width: 90%;
+		max-width: 600px;
+		max-height: 85vh;
+		overflow-y: auto;
+		box-shadow: var(--shadow-lg);
+		display: flex;
+		flex-direction: column;
+		animation: modalSlide 0.2s ease-out;
+	}
+
+	@keyframes modalSlide {
+		from {
+			transform: translateY(20px);
+			opacity: 0;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.25rem 1.5rem;
+		border-bottom: 1px solid var(--border-color);
+	}
+
+	.modal-header h3 {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.close-btn {
+		background: transparent;
+		border: none;
+		font-size: 1.5rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		line-height: 1;
+		padding: 0;
+	}
+
+	.close-btn:hover {
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		text-align: left;
+	}
+
+	.methodology-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.methodology-section h4 {
+		margin: 0 0 0.25rem 0;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.methodology-section p {
+		margin: 0;
+		font-size: 0.775rem;
+		color: var(--text-secondary);
+		line-height: 1.4;
+	}
+
+	.math {
+		background: var(--bg-canvas);
+		padding: 0.15rem 0.35rem;
+		border-radius: var(--radius-sm);
+		font-family: monospace;
+		font-size: 0.75rem;
+		color: var(--text-primary);
+	}
+
+	.scientific-disclaimer {
+		background: rgba(239, 68, 68, 0.05);
+		border: 1px solid rgba(239, 68, 68, 0.15);
+		padding: 0.75rem 1rem;
+		border-radius: var(--radius-md);
+		margin-top: 0.5rem;
+	}
+
+	.scientific-disclaimer p {
+		margin: 0;
+		font-size: 0.725rem;
+		color: #ef4444;
+		line-height: 1.4;
 	}
 </style>
