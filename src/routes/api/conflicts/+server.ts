@@ -88,7 +88,7 @@ export const GET: RequestHandler = async ({ url }) => {
 					const end = Number(conflict.endYear);
 					const timelineData = [];
 
-					for (let y = Math.max(1880, start - 5); y <= Math.min(2026, end + 5); y++) {
+					for (let y = start - 5; y <= Math.min(2026, end + 5); y++) {
 						let battleCount = 0;
 						let intensity = 0;
 

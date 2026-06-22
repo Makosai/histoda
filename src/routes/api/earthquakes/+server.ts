@@ -70,7 +70,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				if (eventRows.length > 0) {
 					const { country, year } = eventRows[0];
-					const startYear = Math.max(1880, year - 15);
+					const startYear = year - 15;
 					const endYear = Math.min(2026, year + 15);
 
 					// Query seismic events in that country during the 30-year window

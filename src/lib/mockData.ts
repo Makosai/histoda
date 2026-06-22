@@ -73,7 +73,7 @@ export const conflicts: Conflict[] = [
 export function generateMockSeismic(eq: Earthquake): any[] {
 	const eventYear = eq.year;
 	const mockSeismic: any[] = [];
-	for (let year = Math.max(1880, eventYear - 15); year <= Math.min(2026, eventYear + 15); year++) {
+	for (let year = eventYear - 15; year <= Math.min(2026, eventYear + 15); year++) {
 		// Base background magnitude noise (usually minor: 1.0 to 4.0)
 		let mag = 2.0 + (Math.sin(year * 17) * 0.8) + (Math.cos(year * 3) * 0.4);
 		let frequency = 10 + Math.floor(Math.sin(year * 2) * 5);
@@ -103,7 +103,7 @@ export function generateMockConflict(conflict: Conflict): any[] {
 	const start = conflict.startYear;
 	const end = conflict.endYear;
 	const mockConflicts: any[] = [];
-	for (let year = Math.max(1800, start - 5); year <= Math.min(2026, end + 5); year++) {
+	for (let year = start - 5; year <= Math.min(2026, end + 5); year++) {
 		let battleCount = 0;
 		let intensity = 0;
 
