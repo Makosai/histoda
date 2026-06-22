@@ -20,9 +20,26 @@
 	let isCelsius = $state(true);
 
 	// Selections
-	let selectedStation = $state<Station>(data.stations[0]);
-	let selectedEarthquake = $state<Earthquake>(data.earthquakes[0]);
-	let selectedConflict = $state<Conflict>(data.conflicts[0]);
+	const initialStation = data.stations[0];
+	const initialEarthquake = data.earthquakes[0];
+	const initialConflict = data.conflicts[0];
+
+	let selectedStation = $state<Station>(initialStation);
+	let selectedEarthquake = $state<Earthquake>(initialEarthquake);
+	let selectedConflict = $state<Conflict>(initialConflict);
+
+	// Sync selections reactively if layout data updates
+	$effect(() => {
+		if (data.stations && selectedStation && !data.stations.some(s => s.id === selectedStation.id)) {
+			selectedStation = data.stations[0];
+		}
+		if (data.earthquakes && selectedEarthquake && !data.earthquakes.some(e => e.id === selectedEarthquake.id)) {
+			selectedEarthquake = data.earthquakes[0];
+		}
+		if (data.conflicts && selectedConflict && !data.conflicts.some(c => c.id === selectedConflict.id)) {
+			selectedConflict = data.conflicts[0];
+		}
+	});
 
 	// Year range filter controls
 	let startYear = $state(1880);
@@ -358,50 +375,50 @@
 			/>
 		</main>
 	</div>
+</div>
 
-	{#if showMethodology}
-		<div class="modal-backdrop" onclick={() => { showMethodology = false; }}>
-			<div class="modal-content" onclick={(e) => e.stopPropagation()}>
-				<div class="modal-header">
-					<h3>🔬 Scientific Methodology & Data Provenance</h3>
-					<button class="close-btn" onclick={() => { showMethodology = false; }}>&times;</button>
-				</div>
-				<div class="modal-body">
-					<section class="methodology-section">
-						<h4>🌡️ Climate & Temperatures</h4>
-						<p><strong>Primary Source:</strong> NASA GISTEMP (Global Temperature Anomaly) & NOAA Global Historical Climatology Network (GHCN-Daily).</p>
-						<p><strong>Baseline Reference:</strong> Anomalies are computed relative to the 1960–1990 global average temperature (~14.0°C / 57.2°F).</p>
-						<p><strong>Formula:</strong> Anomaly = Local average temperature minus baseline reference temperature.</p>
-					</section>
+{#if showMethodology}
+	<div class="modal-backdrop" onclick={() => { showMethodology = false; }}>
+		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h3>🔬 Scientific Methodology & Data Provenance</h3>
+				<button class="close-btn" onclick={() => { showMethodology = false; }}>&times;</button>
+			</div>
+			<div class="modal-body">
+				<section class="methodology-section">
+					<h4>🌡️ Climate & Temperatures</h4>
+					<p><strong>Primary Source:</strong> NASA GISTEMP (Global Temperature Anomaly) & NOAA Global Historical Climatology Network (GHCN-Daily).</p>
+					<p><strong>Baseline Reference:</strong> Anomalies are computed relative to the 1960–1990 global average temperature (~14.0°C / 57.2°F).</p>
+					<p><strong>Formula:</strong> Anomaly = Local average temperature minus baseline reference temperature.</p>
+				</section>
 
-					<section class="methodology-section">
-						<h4>🌋 Seismic & Earthquakes</h4>
-						<p><strong>Primary Source:</strong> USGS ANSS Comprehensive Earthquake Catalog (ComCat) API.</p>
-						<p><strong>Aftershock Decay:</strong> Modeled using **Omori's Law** for frequency decay:
-							<code class="math">n(t) = k / (c + t)^p</code> (where <em>c = 0.1</em>, <em>p = 1.0</em>, and <em>k</em> scales exponentially with the main shock magnitude).
-						</p>
-						<p><strong>Magnitude Distribution:</strong> Modeled using the **Gutenberg-Richter Law**:
-							<code class="math">log10(N) = a - bM</code> (with <em>b = 1.0</em> for standard seismic size scaling).
-						</p>
-					</section>
+				<section class="methodology-section">
+					<h4>🌋 Seismic & Earthquakes</h4>
+					<p><strong>Primary Source:</strong> USGS ANSS Comprehensive Earthquake Catalog (ComCat) API.</p>
+					<p><strong>Aftershock Decay:</strong> Modeled using **Omori's Law** for frequency decay:
+						<code class="math">n(t) = k / (c + t)^p</code> (where <em>c = 0.1</em>, <em>p = 1.0</em>, and <em>k</em> scales exponentially with the main shock magnitude).
+					</p>
+					<p><strong>Magnitude Distribution:</strong> Modeled using the **Gutenberg-Richter Law**:
+						<code class="math">log10(N) = a - bM</code> (with <em>b = 1.0</em> for standard seismic size scaling).
+					</p>
+				</section>
 
-					<section class="methodology-section">
-						<h4>⚔️ Wars & Conflicts</h4>
-						<p><strong>Primary Source:</strong> Correlates of War (COW) Project & Uppsala Conflict Data Program (UCDP).</p>
-						<p><strong>Conflict Intensity Curve:</strong> For individual events, battle intensity is modeled over the war's span using a bell-curve (sine wave) peaking at mid-conflict, supplemented with random skirmish noise:
-							<code class="math">Intensity(p) = 40 + 50 * sin(p * &pi;) + CosNoise</code>
-						</p>
-						<p><strong>Global Timeline:</strong> Real active conflict counts and estimated annual casualties aggregated from historical database records.</p>
-					</section>
+				<section class="methodology-section">
+					<h4>⚔️ Wars & Conflicts</h4>
+					<p><strong>Primary Source:</strong> Correlates of War (COW) Project & Uppsala Conflict Data Program (UCDP).</p>
+					<p><strong>Conflict Intensity Curve:</strong> For individual events, battle intensity is modeled over the war's span using a bell-curve (sine wave) peaking at mid-conflict, supplemented with random skirmish noise:
+						<code class="math">Intensity(p) = 40 + 50 * sin(p * &pi;) + CosNoise</code>
+					</p>
+					<p><strong>Global Timeline:</strong> Real active conflict counts and estimated annual casualties aggregated from historical database records.</p>
+				</section>
 
-					<div class="scientific-disclaimer">
-						<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata (war spans, total casualties, earthquake coordinates, climate station logs) represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. battle intensity index, daily aftershock counts) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
-					</div>
+				<div class="scientific-disclaimer">
+					<p><strong>⚠️ Scientific Disclaimer:</strong> While macro-level metadata (war spans, total casualties, earthquake coordinates, climate station logs) represents accurate, peer-reviewed historical records, high-resolution daily timeline parameters (e.g. battle intensity index, daily aftershock counts) are mathematically simulated to project timeline trends where granular data is unavailable.</p>
 				</div>
 			</div>
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}
 
 <style>
 	/* Grid layout styles conforming to Vercel/Linear slate aesthetics */
