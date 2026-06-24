@@ -27,7 +27,8 @@ Where $\gamma$ ranges from $0.9$ (tropical regions with high thermal inertia, e.
 *   **🔴 What We Miss (Gaps)**: Pre-1970 local station-level daily logs (local database limitation) and microclimatic variables (humidity, solar radiation, wind speed).
 *   **Fallback Simulation**: For pre-1970 (or offline fallback), local temperatures are modeled using local averages and seasonal sine waves:
     $$T_{\text{avg}}(y, m) = T_{\text{base}} + \frac{R}{2} \cdot \sin\left(\frac{(m - 6)\pi}{6}\right) + (\Delta A_{\text{global}}(y) \cdot \gamma) + \epsilon_{\text{noise}}$$
-    *Where $R$ is the station's temperature range, $m$ is the month (1 to 12), and $\epsilon_{\text{noise}}$ is random noise.*
+    
+    <i>Where $R$ is the station's temperature range, $m$ is the month (1 to 12), and $\epsilon_{\text{noise}}$ is random noise.</i>
 
 ---
 
