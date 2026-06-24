@@ -36,7 +36,7 @@
 	<!-- Footer -->
 	<footer class="footer">
 		<p class="footer-text">
-			© 2024–{new Date().getFullYear()} <a href="https://quaintstudios.com" target="_blank" rel="noopener" class="footer-link">Quaint Studios LLC</a>
+			© {new Date().getFullYear()} <a href="https://quaintstudios.com" target="_blank" rel="noopener" class="footer-link">Quaint Studios LLC</a>
 		</p>
 	</footer>
 </div>
